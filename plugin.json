@@ -1,0 +1,48 @@
+{
+    "description": "A Mattermost plugin to receive and handle Rollbar webhook events",
+    "id": "matterbar",
+    "name": "Matterbar",
+    "server": {
+        "executable": "",
+        "executables": {
+            "darwin-amd64": "server/plugin-darwin-amd64",
+            "linux-amd64": "server/plugin-linux-amd64",
+            "windows-amd64": "server/plugin-windows-amd64.exe"
+        }
+    },
+    "settings_schema": {
+        "footer": "",
+        "header": "",
+        "settings": [
+            {
+                "display_name": "Default Team",
+                "help_text": "The default team where Rollbar webhooks will be posted. If not configured, incoming requests must include a `team` query parameter.",
+                "key": "DefaultTeam",
+                "placeholder": "Team name",
+                "type": "text"
+            },
+            {
+                "display_name": "Default Channel",
+                "help_text": "The default channel where Rollbar webhooks will be posted. If not configured, incoming requests must include a `channel` query parameter. To use this setting, a default team must also be configured first.",
+                "key": "DefaultChannel",
+                "placeholder": "e.g. Rollbar",
+                "type": "text"
+            },
+            {
+                "display_name": "Username",
+                "help_text": "(Required) The user that this plugin will post as.",
+                "key": "Username",
+                "placeholder": "e.g. Rollbar",
+                "type": "text"
+            },
+            {
+                "display_name": "Auth Secret",
+                "help_text": "A generated secret that must be included in the `auth` query parameter to authorize incoming requests.",
+                "key": "Secret",
+                "regenerate_help_text": "Caution! Regenerating the auth secret will invalidate any existing integrations' requests.",
+                "type": "generated"
+            }
+        ]
+    },
+    "version": "0.1.0"
+}

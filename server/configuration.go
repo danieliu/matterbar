@@ -27,10 +27,14 @@ type configuration struct {
 	// exist. Defaults to `Rollbar`.
 	Username string
 
+	// The generated secret that will be used to authenticate incoming webhook
+	// requests coming from Rollbar.
+	Secret string
+
 	// Corresponding ids of the above
-	teamId string
+	teamId    string
 	channelId string
-	userId string
+	userId    string
 }
 
 // Clone deep copies the configuration. Your implementation may only require a
@@ -40,8 +44,9 @@ func (c *configuration) Clone() *configuration {
 		DefaultTeam:    c.DefaultTeam,
 		DefaultChannel: c.DefaultChannel,
 		Username:       c.Username,
+		Secret:         c.Secret,
 		teamId:         c.teamId,
-		channelId:		c.channelId,
+		channelId:      c.channelId,
 		userId:         c.userId,
 	}
 }
@@ -180,8 +185,8 @@ func (p *Plugin) ensureDefaultChannelExists(configuration *configuration) (strin
 	}
 
 	channel, _ := p.API.GetChannelByNameForTeamName(configuration.DefaultTeam,
-													configuration.DefaultChannel,
-													false)
+		configuration.DefaultChannel,
+		false)
 
 	// Check that the configured channel exists.
 	if channel == nil {

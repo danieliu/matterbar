@@ -25,7 +25,7 @@ deps:
 	dep ensure
 
 fmt:
-	gofmt -w .
+	gofmt -w server
 
 test:
 	cd server && go test -v -race -coverprofile coverage.txt

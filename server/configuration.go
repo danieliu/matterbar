@@ -109,7 +109,7 @@ func (p *Plugin) OnConfigurationChange() error {
 		return errors.Wrap(err, "failed to ensure user exists")
 	}
 
-	configuration.DefaultChannel, err = p.ensureDefaultChannelExists(configuration)
+	configuration.channelId, err = p.ensureDefaultChannelExists(configuration)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure default channel exists")
 	}
@@ -167,8 +167,6 @@ func (p *Plugin) ensureUserExists(configuration *configuration) (string, error) 
 
 // Ensures the configured default channel exists on the configured team
 func (p *Plugin) ensureDefaultChannelExists(configuration *configuration) (string, error) {
-	var err *model.AppError
-
 	// If not configured, we can just expect a `channel` query parameter in all
 	// incoming http requests instead.
 	if configuration.DefaultChannel == "" {
@@ -180,8 +178,14 @@ func (p *Plugin) ensureDefaultChannelExists(configuration *configuration) (strin
 		// TODO: make sure the returned error is actually logged and somehow
 		// visible to whoever is changing this setting, then remove the explicit
 		// warn log call
-		p.API.LogWarn("Configuration invalid: a DefaultTeam must be specified before a DefaultChannel")
-		return "", err
+		warnMessage := "Configuration invalid: a DefaultTeam must be specified before a DefaultChannel"
+		p.API.LogWarn(warnMessage)
+		return "", model.NewAppError(
+			"ensureDefaultChannelExists",
+			"matterbar.server.configuration.default_team_missing_for_default_channel",
+			nil,
+			warnMessage,
+			400)
 	}
 
 	channel, _ := p.API.GetChannelByNameForTeamName(configuration.DefaultTeam,
@@ -193,9 +197,16 @@ func (p *Plugin) ensureDefaultChannelExists(configuration *configuration) (strin
 		// TODO: make sure the returned error is actually logged and somehow
 		// visible to whoever is changing this setting, then remove the explicit
 		// warn log call
-		p.API.LogWarn(fmt.Sprintf("Configuration invalid: no channel named %s exists",
-			configuration.DefaultChannel))
-		return "", err
+		warnMessage := fmt.Sprintf(
+			"Configuration invalid: no channel named %s exists",
+			configuration.DefaultChannel)
+		p.API.LogWarn(warnMessage)
+		return "", model.NewAppError(
+			"ensureDefaultChannelExists",
+			"matterbar.server.configuration.default_channel_does_not_exist",
+			nil,
+			warnMessage,
+			400)
 	}
 
 	return channel.Id, nil

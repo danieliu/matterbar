@@ -1,5 +1,13 @@
 package main
 
+import (
+	"bytes"
+	"text/template"
+)
+
+const DefaultTemplate = "[{{ $message := .Data.Item.LastOccurrence.Body.Message.Body }}{{ if $message }}{{ $message }}{{ else }}{{.Data.Item.LastOccurrence.Body.Trace.Exception.Message}}{{ end }}](https://rollbar.com/<org>/<project>/items/{{ .Data.Item.Counter }})\n" +
+	"{{ .EventName }} - [{{ .Data.Item.Environment }}] - {{ .Data.Item.LastOccurrence.Level }}"
+
 type Rollbar struct {
 	EventName string `json:"event_name"`
 	Data      struct {
@@ -18,6 +26,9 @@ type Rollbar struct {
 			LastModifiedBy           *int     `json:"last_modified_by"`
 			LastOccurrence           struct {
 				Body struct {
+					Message struct {
+						Body string `json:"body"`
+					} `json:"message"`
 					Trace struct {
 						Exception struct {
 							Class   string `json:"class"`
@@ -90,4 +101,18 @@ type Rollbar struct {
 			WindowSizeDescription string `json:"window_size_description"`
 		} `json:"trigger"`
 	} `json:"data"`
+}
+
+func (rollbar *Rollbar) interpolateMessage(message string) (string, error) {
+	tmpl, err := template.New("post").Parse(message)
+	if err != nil {
+		return "", err
+	}
+
+	var result bytes.Buffer
+	if err := tmpl.Execute(&result, rollbar); err != nil {
+		return "", err
+	}
+
+	return result.String(), nil
 }

@@ -1,0 +1,89 @@
+{
+  "data": {
+    "item": {
+      "activating_occurrence_id": 19007601096,
+      "assigned_user_id": null,
+      "counter": 1,
+      "environment": "production",
+      "first_occurrence_id": 19007601096,
+      "first_occurrence_timestamp": 1480713852,
+      "framework": 13,
+      "hash": "846d53400721434a78442645e0976fc82f009238",
+      "id": 418474069,
+      "integrations_data": {},
+      "last_activated_timestamp": 1480713852,
+      "last_modified_by": 2147,
+      "last_occurrence": {
+        "body": {
+          "trace": {
+            "exception": {
+              "class": "ValueError",
+              "message": "Every Occurrence Test"
+            },
+            "frames": [
+              {
+                "code": "raise ValueError('Test')",
+                "filename": "test.py",
+                "lineno": 5,
+                "locals": {
+                  "__builtins__": "<type 'module'>",
+                  "__doc__": null,
+                  "__file__": "test.py",
+                  "__name__": "__main__",
+                  "__package__": null,
+                  "rollbar": "<type 'module'>"
+                },
+                "method": "<module>"
+              }
+            ]
+          }
+        },
+        "environment": "production",
+        "framework": "unknown",
+        "language": "python 2.7.12",
+        "level": "error",
+        "metadata": {
+          "access_token": "",
+          "api_server_hostname": "dal05api2",
+          "customer_timestamp": 1480713851,
+          "debug": {
+            "routes": {
+              "counters": {
+                "post_item": 475931
+              },
+              "start_time": 1480645795776
+            }
+          },
+          "timestamp_ms": 1480713852386
+        },
+        "notifier": {
+          "name": "pyrollbar",
+          "version": "0.13.8"
+        },
+        "server": {
+          "argv": [
+            "test.py"
+          ],
+          "host": "test.local",
+          "pid": 11277
+        },
+        "timestamp": 1480713852,
+        "uuid": "5ccf5483-1dfc-453a-aa80-ac857ed5df87"
+      },
+      "last_occurrence_id": 19007601096,
+      "last_occurrence_timestamp": 1480713852,
+      "level": 40,
+      "level_lock": 0,
+      "platform": 0,
+      "project_id": 93341,
+      "public_item_id": null,
+      "resolved_in_version": null,
+      "status": 1,
+      "title": "ValueError: Test",
+      "title_lock": 0,
+      "total_occurrences": 1,
+      "unique_occurrences": null
+    }
+  },
+  "event_name": "new_item"
+}

@@ -5,9 +5,6 @@ import (
 	"text/template"
 )
 
-const DefaultTemplate = "[{{ $message := .Data.Item.LastOccurrence.Body.Message.Body }}{{ if $message }}{{ $message }}{{ else }}{{.Data.Item.LastOccurrence.Body.Trace.Exception.Message}}{{ end }}](https://rollbar.com/<org>/<project>/items/{{ .Data.Item.Counter }})\n" +
-	"{{ .EventName }} - [{{ .Data.Item.Environment }}] - {{ .Data.Item.LastOccurrence.Level }}"
-
 type Rollbar struct {
 	EventName string `json:"event_name"`
 	Data      struct {

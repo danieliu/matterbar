@@ -2,11 +2,22 @@ package main
 
 import (
 	"crypto/subtle"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
 )
+
+const DefaultTemplate = "{{ .EventName }} - [{{ .Data.Item.Environment }}] - {{ .Data.Item.LastOccurrence.Level }}"
+
+var EventToColor = map[string]string{
+	"reactivated_item": "#ffff00",
+	"new_item":         "#ff0000",
+	"exp_repeat_item":  "#800080",
+	"item_velocity":    "#ffa500",
+}
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
@@ -18,6 +29,8 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 }
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	// TODO: Clean up / refactor validation
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
 		return
@@ -81,6 +94,56 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		channelId = channel.Id
 	}
 
-	// TODO: parse incoming rollbar post body
-	// TODO: create mattermost post from rollbar data
+	var rollbar Rollbar
+	if err := json.NewDecoder(r.Body).Decode(&rollbar); err != nil {
+		p.API.LogError(fmt.Sprintf("Error in json decoding webhook: %s", err.Error()))
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	text, err := rollbar.interpolateMessage(DefaultTemplate)
+	if err != nil {
+		p.API.LogError(fmt.Sprintf("Error interpolating Rollbar message: %s", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	eventMessage := rollbar.Data.Item.LastOccurrence.Body.Message.Body
+	if eventMessage == "" {
+		eventMessage = rollbar.Data.Item.LastOccurrence.Body.Trace.Exception.Message
+	}
+
+	// TODO: Rollbar custom webhooks payload seem to provide neither a link
+	// nor the necessary data (user/organization, project name) to build out
+	// a direct link back to the item or specific occurrence.
+	// link := fmt.Sprintf("https://rollbar.com/<org>/<project>/items/%d", rollbar.Data.Item.Counter)
+
+	fallback := fmt.Sprintf(
+		"%s [%s] - %s",
+		rollbar.EventName,
+		rollbar.Data.Item.LastOccurrence.Environment,
+		eventMessage)
+
+	if _, err := p.API.CreatePost(&model.Post{
+		ChannelId: channelId,
+		UserId:    configuration.userId,
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments": []*model.SlackAttachment{
+				&model.SlackAttachment{
+					Color:    EventToColor[rollbar.EventName],
+					Fallback: fallback,
+					Title:    eventMessage,
+					// TitleLink: link,
+					Text: text,
+				},
+			},
+		},
+	}); err != nil {
+		p.API.LogError(fmt.Sprintf("Error creating a post: %s", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

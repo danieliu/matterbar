@@ -31,14 +31,10 @@ type InterpolateMessageTest struct {
 }
 
 func TestInterpolateMessage(t *testing.T) {
-	everyOccurrenceMessage := "[Every Occurrence Test](https://rollbar.com/<org>/<project>/items/1)\n" +
-		"new_item - [production] - error"
-	highOccurrenceMessage := "[High Occurrence Message](https://rollbar.com/<org>/<project>/items/2)\n" +
-		"item_velocity - [production] - error"
-	newItemMessage := "[New Item Message](https://rollbar.com/<org>/<project>/items/3)\n" +
-		"new_item - [production] - error"
-	tenNthMessage := "[10^nth Message](https://rollbar.com/<org>/<project>/items/4)\n" +
-		"exp_repeat_item - [production] - error"
+	everyOccurrenceMessage := "new_item - [production] - error"
+	highOccurrenceMessage := "item_velocity - [production] - error"
+	newItemMessage := "new_item - [production] - error"
+	tenNthMessage := "exp_repeat_item - [production] - error"
 
 	testcases := []InterpolateMessageTest{
 		{"new_item.json", "", ""},

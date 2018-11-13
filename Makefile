@@ -13,6 +13,9 @@ bundle:
 	cp -r build/* dist/matterbar/server/
 	cd dist && tar -cvzf matterbar.tar.gz matterbar/
 
+coverage: test
+	go tool cover -html=server/coverage.txt
+
 deploy: build bundle
 ifneq ($(wildcard ../mattermost-server/.*),)
 	mkdir -p ../mattermost-server/plugins

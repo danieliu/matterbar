@@ -99,14 +99,14 @@ func (p *Plugin) OnConfigurationChange() error {
 	}
 
 	// validate configuration settings
-	configuration.teamId, err = p.ensureDefaultTeamExists(configuration)
-	if err != nil {
-		return errors.Wrap(err, "failed to ensure default team exists")
-	}
-
 	configuration.userId, err = p.ensureUserExists(configuration)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure user exists")
+	}
+
+	configuration.teamId, err = p.ensureDefaultTeamExists(configuration)
+	if err != nil {
+		return errors.Wrap(err, "failed to ensure default team exists")
 	}
 
 	configuration.channelId, err = p.ensureDefaultChannelExists(configuration)
@@ -117,6 +117,27 @@ func (p *Plugin) OnConfigurationChange() error {
 	p.setConfiguration(configuration)
 
 	return nil
+}
+
+// Ensures the configured default user exists
+func (p *Plugin) ensureUserExists(configuration *configuration) (string, error) {
+	var err *model.AppError
+
+	// Check for the configured user. Ignore any error, since it's hard to
+	// distinguish runtime errors from a user simply not existing.
+	user, _ := p.API.GetUserByUsername(configuration.Username)
+
+	// Check that the configured user exists.
+	if user == nil {
+		// TODO: make sure the returned error is actually logged and somehow
+		// visible to whoever is changing this setting, then remove the explicit
+		// warn log call
+		p.API.LogWarn(fmt.Sprintf("Configuration invalid: no user with Username %s exists",
+			configuration.Username))
+		return "", err
+	}
+
+	return user.Id, nil
 }
 
 // Ensures the configured default team exists
@@ -142,27 +163,6 @@ func (p *Plugin) ensureDefaultTeamExists(configuration *configuration) (string, 
 	}
 
 	return team.Id, nil
-}
-
-// Ensures the configured default user exists
-func (p *Plugin) ensureUserExists(configuration *configuration) (string, error) {
-	var err *model.AppError
-
-	// Check for the configured user. Ignore any error, since it's hard to
-	// distinguish runtime errors from a user simply not existing.
-	user, _ := p.API.GetUserByUsername(configuration.Username)
-
-	// Check that the configured user exists.
-	if user == nil {
-		// TODO: make sure the returned error is actually logged and somehow
-		// visible to whoever is changing this setting, then remove the explicit
-		// warn log call
-		p.API.LogWarn(fmt.Sprintf("Configuration invalid: no user with Username %s exists",
-			configuration.Username))
-		return "", err
-	}
-
-	return user.Id, nil
 }
 
 // Ensures the configured default channel exists on the configured team

@@ -1,13 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
-	"text/template"
 )
-
-const DefaultTemplate = "{{ .EventName }} - [{{ .Data.Item.Environment }}] - {{ .Data.Item.LastOccurrence.Level }}"
 
 type Rollbar struct {
 	EventName string `json:"event_name"`
@@ -102,20 +98,6 @@ type Rollbar struct {
 			WindowSizeDescription string `json:"window_size_description"`
 		} `json:"trigger"`
 	} `json:"data"`
-}
-
-func (rollbar *Rollbar) interpolateMessage(message string) (string, error) {
-	tmpl, err := template.New("post").Parse(message)
-	if err != nil {
-		return "", err
-	}
-
-	var result bytes.Buffer
-	if err := tmpl.Execute(&result, rollbar); err != nil {
-		return "", err
-	}
-
-	return result.String(), nil
 }
 
 func (rollbar *Rollbar) eventNameToTitle() string {

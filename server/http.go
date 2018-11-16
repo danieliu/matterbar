@@ -10,13 +10,13 @@ import (
 	"github.com/mattermost/mattermost-server/plugin"
 )
 
-const DefaultTemplate = "{{ .EventName }} - [{{ .Data.Item.Environment }}] - {{ .Data.Item.LastOccurrence.Level }}"
-
 var EventToColor = map[string]string{
-	"reactivated_item": "#ffff00",
-	"new_item":         "#ff0000",
-	"exp_repeat_item":  "#800080",
-	"item_velocity":    "#ffa500",
+	"new_item":         "#ff0000", // red
+	"reactivated_item": "#ffff00", // yellow
+	"exp_repeat_item":  "#800080", // purple
+	"item_velocity":    "#ffa500", // orange
+	"reopened_item":    "#add8e6", // light blue
+	"resolved_item":    "#00ff00", // green
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
@@ -42,8 +42,8 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	queryChannel := query.Get("channel")
 
 	if subtle.ConstantTimeCompare([]byte(query.Get("auth")), []byte(configuration.Secret)) != 1 {
-		p.API.LogWarn("Unauthorized matterbar webhook request.")
-		http.Error(w, "Unauthorized.", http.StatusUnauthorized)
+		p.API.LogWarn("Unauthenticated matterbar webhook request.")
+		http.Error(w, "Unauthenticated.", http.StatusUnauthorized)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		team, _ := p.API.GetTeamByName(queryTeam)
 
 		if team == nil {
-			errorMessage := fmt.Sprintf("Team '%s' does not exist", queryTeam)
+			errorMessage := fmt.Sprintf("Team '%s' does not exist.", queryTeam)
 			p.API.LogWarn(errorMessage)
 			http.Error(w, errorMessage, http.StatusBadRequest)
 			return
@@ -85,7 +85,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		channel, _ := p.API.GetChannelByName(teamId, queryChannel, false)
 
 		if channel == nil {
-			errorMessage := fmt.Sprintf("Channel '%s' not found.", queryChannel)
+			errorMessage := fmt.Sprintf("Channel '%s' does not exist.", queryChannel)
 			p.API.LogWarn(errorMessage)
 			http.Error(w, errorMessage, http.StatusBadRequest)
 			return
@@ -101,28 +101,42 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	text, err := rollbar.interpolateMessage(DefaultTemplate)
-	if err != nil {
-		p.API.LogError(fmt.Sprintf("Error interpolating Rollbar message: %s", err.Error()))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	title := rollbar.eventNameToTitle()
+	lastOccurrence := rollbar.Data.Item.LastOccurrence
+	environment := rollbar.Data.Item.Environment
+	framework := lastOccurrence.Framework
+	itemLink := fmt.Sprintf(
+		"https://rollbar.com/item/uuid/?uuid=%s",
+		lastOccurrence.Uuid)
+	occurrenceLink := fmt.Sprintf(
+		"https://rollbar.com/occurrence/uuid/?uuid=%s",
+		lastOccurrence.Uuid)
+	eventText := lastOccurrence.Body.Message.Body
+	if eventText == "" {
+		exceptionClass := lastOccurrence.Body.Trace.Exception.Class
+		exceptionMessage := lastOccurrence.Body.Trace.Exception.Message
+		eventText = fmt.Sprintf("%s: %s", exceptionClass, exceptionMessage)
 	}
 
-	eventMessage := rollbar.Data.Item.LastOccurrence.Body.Message.Body
-	if eventMessage == "" {
-		eventMessage = rollbar.Data.Item.LastOccurrence.Body.Trace.Exception.Message
+	fallback := fmt.Sprintf("[%s] %s - %s", environment, title, eventText)
+
+	fields := []*model.SlackAttachmentField{
+		&model.SlackAttachmentField{
+			Short: true,
+			Title: "Environment",
+			Value: environment,
+		},
+		&model.SlackAttachmentField{
+			Short: true,
+			Title: "Framework",
+			Value: framework,
+		},
+		&model.SlackAttachmentField{
+			Short: true,
+			Title: "Links",
+			Value: fmt.Sprintf("[Item](%s) | [Occurrence](%s)", itemLink, occurrenceLink),
+		},
 	}
-
-	// TODO: Rollbar custom webhooks payload seem to provide neither a link
-	// nor the necessary data (user/organization, project name) to build out
-	// a direct link back to the item or specific occurrence.
-	// link := fmt.Sprintf("https://rollbar.com/<org>/<project>/items/%d", rollbar.Data.Item.Counter)
-
-	fallback := fmt.Sprintf(
-		"%s [%s] - %s",
-		rollbar.EventName,
-		rollbar.Data.Item.LastOccurrence.Environment,
-		eventMessage)
 
 	if _, err := p.API.CreatePost(&model.Post{
 		ChannelId: channelId,
@@ -133,11 +147,12 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			"use_user_icon": "true",
 			"attachments": []*model.SlackAttachment{
 				&model.SlackAttachment{
-					Color:    EventToColor[rollbar.EventName],
-					Fallback: fallback,
-					Title:    eventMessage,
-					// TitleLink: link,
-					Text: text,
+					Color:     EventToColor[rollbar.EventName],
+					Fallback:  fallback,
+					Fields:    fields,
+					Title:     title,
+					TitleLink: itemLink,
+					Text:      fmt.Sprintf("```\n%s\n```", eventText),
 				},
 			},
 		},

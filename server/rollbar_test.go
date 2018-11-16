@@ -59,7 +59,7 @@ func TestInterpolateMessage(t *testing.T) {
 }
 
 type EventNameToTitleTest struct {
-	data string
+	data     string
 	expected string
 }
 

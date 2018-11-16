@@ -2,8 +2,12 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 	"text/template"
 )
+
+const DefaultTemplate = "{{ .EventName }} - [{{ .Data.Item.Environment }}] - {{ .Data.Item.LastOccurrence.Level }}"
 
 type Rollbar struct {
 	EventName string `json:"event_name"`
@@ -112,4 +116,33 @@ func (rollbar *Rollbar) interpolateMessage(message string) (string, error) {
 	}
 
 	return result.String(), nil
+}
+
+func (rollbar *Rollbar) eventNameToTitle() string {
+	prefix := ""
+	title := ""
+	level := strings.Title(rollbar.Data.Item.LastOccurrence.Level)
+
+	switch rollbar.EventName {
+	case "new_item":
+		prefix = "New"
+	case "reactivated_item":
+		prefix = "Reactivated"
+	case "reopened_item":
+		prefix = "Reopened"
+	case "resolved_item":
+		prefix = "Resolved"
+	case "exp_repeat_item":
+		prefix = fmt.Sprintf("%dth", rollbar.Data.Occurrences)
+	case "item_velocity":
+		triggerData := rollbar.Data.Trigger
+		title = fmt.Sprintf("%d occurrences in %s", triggerData.Threshold, triggerData.WindowSizeDescription)
+	}
+
+	// non item_velocity case
+	if title == "" {
+		title = fmt.Sprintf("%s %s", prefix, level)
+	}
+
+	return title
 }

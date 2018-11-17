@@ -19,7 +19,7 @@ var EventToColor = map[string]string{
 	"resolved_item":    "#00ff00", // green
 }
 
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+func (p *RollbarPlugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/notify":
 		p.handleWebhook(w, r)
@@ -28,7 +28,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 }
 
-func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// TODO: Clean up / refactor validation
 
 	if r.Method != http.MethodPost {

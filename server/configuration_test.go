@@ -33,14 +33,14 @@ func TestCloningConfiguration(t *testing.T) {
 
 func TestGetSetConfiguration(t *testing.T) {
 	t.Run("null configuration", func(t *testing.T) {
-		plugin := &Plugin{}
+		plugin := &RollbarPlugin{}
 		if configuration := plugin.getConfiguration(); configuration == nil {
 			t.Error("Expected configuration to not be nil")
 		}
 	})
 
 	t.Run("changing configuration", func(t *testing.T) {
-		plugin := &Plugin{}
+		plugin := &RollbarPlugin{}
 		configuration1 := &configuration{userId: "123"}
 		plugin.setConfiguration(configuration1)
 		if configuration1 != plugin.getConfiguration() {
@@ -63,7 +63,7 @@ func TestGetSetConfiguration(t *testing.T) {
 	})
 
 	t.Run("setting same configuration", func(t *testing.T) {
-		plugin := &Plugin{}
+		plugin := &RollbarPlugin{}
 		configuration1 := &configuration{}
 		plugin.setConfiguration(configuration1)
 		defer func() {
@@ -75,7 +75,7 @@ func TestGetSetConfiguration(t *testing.T) {
 	})
 
 	t.Run("clearing configuration", func(t *testing.T) {
-		plugin := &Plugin{}
+		plugin := &RollbarPlugin{}
 
 		configuration1 := &configuration{teamId: "1"}
 		plugin.setConfiguration(configuration1)
@@ -97,7 +97,7 @@ func TestGetSetConfiguration(t *testing.T) {
 
 func TestOnConfigurationChange(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{
 			Username:       "username",
 			DefaultTeam:    "default-team",
@@ -112,6 +112,7 @@ func TestOnConfigurationChange(t *testing.T) {
 		api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
 		api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
 		api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(&model.Channel{Id: "channelId"}, nil)
+		api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
 		p.SetAPI(api)
 
 		result := p.OnConfigurationChange()
@@ -121,7 +122,7 @@ func TestOnConfigurationChange(t *testing.T) {
 	})
 
 	t.Run("load configuration error", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		api := &plugintest.API{}
 		api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return((*model.AppError)(nil))
 		p.SetAPI(api)
@@ -133,7 +134,7 @@ func TestOnConfigurationChange(t *testing.T) {
 	})
 
 	t.Run("ensureDefaultUserExists error", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{Username: "username"}
 
 		api := &plugintest.API{}
@@ -152,7 +153,7 @@ func TestOnConfigurationChange(t *testing.T) {
 	})
 
 	t.Run("ensureDefaultTeamExists error", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{
 			Username:    "username",
 			DefaultTeam: "default-team",
@@ -175,7 +176,7 @@ func TestOnConfigurationChange(t *testing.T) {
 	})
 
 	t.Run("ensureDefaultChannelExists error", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{
 			Username:       "username",
 			DefaultTeam:    "default-team",
@@ -198,11 +199,37 @@ func TestOnConfigurationChange(t *testing.T) {
 			t.Error("ensure default channel exists error did not propagate error")
 		}
 	})
+
+	t.Run("register command error", func(t *testing.T) {
+		p := &RollbarPlugin{}
+		config := &configuration{
+			Username:       "username",
+			DefaultTeam:    "default-team",
+			DefaultChannel: "default-channel",
+		}
+
+		api := &plugintest.API{}
+		api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
+			*dest.(*configuration) = *config
+			return nil
+		})
+		api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
+		api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
+		api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(&model.Channel{Id: "channelId"}, nil)
+		api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(&model.AppError{Message: "error"})
+		api.On("LogWarn", mock.Anything).Return(nil)
+		p.SetAPI(api)
+
+		result := p.OnConfigurationChange()
+		if result == nil {
+			t.Error("register command error did not propagate error")
+		}
+	})
 }
 
 func TestEnsureDefaultTeamExists(t *testing.T) {
 	t.Run("returns team id", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{DefaultTeam: "default-team"}
 
 		api := &plugintest.API{}
@@ -219,7 +246,7 @@ func TestEnsureDefaultTeamExists(t *testing.T) {
 	})
 
 	t.Run("default team config not set", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{}
 
 		result, err := p.ensureDefaultTeamExists(config)
@@ -230,12 +257,11 @@ func TestEnsureDefaultTeamExists(t *testing.T) {
 			t.Error("Empty default team config returned an error")
 		}
 	})
-
 }
 
 func TestEnsureDefaultChannelExists(t *testing.T) {
 	t.Run("returns channel id", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{
 			DefaultTeam:    "default-team",
 			DefaultChannel: "default-channel",
@@ -255,7 +281,7 @@ func TestEnsureDefaultChannelExists(t *testing.T) {
 	})
 
 	t.Run("default channel config not set", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{}
 
 		result, err := p.ensureDefaultChannelExists(config)
@@ -268,7 +294,7 @@ func TestEnsureDefaultChannelExists(t *testing.T) {
 	})
 
 	t.Run("default channel config set without default team", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		config := &configuration{DefaultChannel: "default-channel"}
 
 		api := &plugintest.API{}
@@ -283,5 +309,4 @@ func TestEnsureDefaultChannelExists(t *testing.T) {
 			t.Error("Default channel without default team did not return error")
 		}
 	})
-
 }

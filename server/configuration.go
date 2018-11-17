@@ -54,7 +54,7 @@ func (c *configuration) Clone() *configuration {
 // getConfiguration retrieves the active configuration under lock, making it safe to use
 // concurrently. The active configuration may change underneath the client of this method, but
 // the struct returned by this API call is considered immutable.
-func (p *Plugin) getConfiguration() *configuration {
+func (p *RollbarPlugin) getConfiguration() *configuration {
 	p.configurationLock.RLock()
 	defer p.configurationLock.RUnlock()
 
@@ -74,7 +74,7 @@ func (p *Plugin) getConfiguration() *configuration {
 // This method panics if setConfiguration is called with the existing configuration. This almost
 // certainly means that the configuration was modified without being cloned and may result in
 // an unsafe access.
-func (p *Plugin) setConfiguration(configuration *configuration) {
+func (p *RollbarPlugin) setConfiguration(configuration *configuration) {
 	p.configurationLock.Lock()
 	defer p.configurationLock.Unlock()
 
@@ -89,7 +89,7 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 //
 // Ensures the default team is configured, and that the default channel and user
 // are created for use by the plugin.
-func (p *Plugin) OnConfigurationChange() error {
+func (p *RollbarPlugin) OnConfigurationChange() error {
 	var configuration = new(configuration)
 	var err error
 
@@ -114,13 +114,17 @@ func (p *Plugin) OnConfigurationChange() error {
 		return errors.Wrap(err, "failed to ensure default channel exists")
 	}
 
+	if err := p.API.RegisterCommand(getCommand()); err != nil {
+		return errors.Wrap(err, "failed to register new command")
+	}
+
 	p.setConfiguration(configuration)
 
 	return nil
 }
 
 // Ensures the configured default user exists
-func (p *Plugin) ensureUserExists(configuration *configuration) (string, error) {
+func (p *RollbarPlugin) ensureUserExists(configuration *configuration) (string, error) {
 	var err *model.AppError
 
 	// Check for the configured user. Ignore any error, since it's hard to
@@ -141,7 +145,7 @@ func (p *Plugin) ensureUserExists(configuration *configuration) (string, error) 
 }
 
 // Ensures the configured default team exists
-func (p *Plugin) ensureDefaultTeamExists(configuration *configuration) (string, error) {
+func (p *RollbarPlugin) ensureDefaultTeamExists(configuration *configuration) (string, error) {
 	var err *model.AppError
 
 	// If not configured, we can just expect a `team` query parameter in all
@@ -166,7 +170,7 @@ func (p *Plugin) ensureDefaultTeamExists(configuration *configuration) (string, 
 }
 
 // Ensures the configured default channel exists on the configured team
-func (p *Plugin) ensureDefaultChannelExists(configuration *configuration) (string, error) {
+func (p *RollbarPlugin) ensureDefaultChannelExists(configuration *configuration) (string, error) {
 	// If not configured, we can just expect a `channel` query parameter in all
 	// incoming http requests instead.
 	if configuration.DefaultChannel == "" {

@@ -46,7 +46,7 @@ func TestServeHttp(t *testing.T) {
 
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
-			p := &Plugin{}
+			p := &RollbarPlugin{}
 			w := httptest.NewRecorder()
 
 			payload, _ := json.Marshal(test.body)
@@ -69,7 +69,7 @@ func TestServeHttp(t *testing.T) {
 	// TODO: use interfaces to have a custom setup as part of the ServeHTTPTest
 	// struct and add the following tests to testcases
 	t.Run("error - unauthenticated request", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("POST", "/notify", nil)
 
@@ -94,7 +94,7 @@ func TestServeHttp(t *testing.T) {
 	})
 
 	t.Run("error - no team configuration, no team in query", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("POST", "/notify?auth=abc123", nil)
 
@@ -119,7 +119,7 @@ func TestServeHttp(t *testing.T) {
 	})
 
 	t.Run("error - no channel config, no channel in query", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("POST", "/notify?auth=abc123", nil)
 
@@ -144,7 +144,7 @@ func TestServeHttp(t *testing.T) {
 	})
 
 	t.Run("error - no team config, api.get query team not found", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("POST", "/notify?auth=abc123&team=nonexistentQueryTeam", nil)
 
@@ -170,7 +170,7 @@ func TestServeHttp(t *testing.T) {
 	})
 
 	t.Run("error - no channel config, api.get query channel not found", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("POST", "/notify?auth=abc123&channel=nonexistentQueryChannel", nil)
 
@@ -196,7 +196,7 @@ func TestServeHttp(t *testing.T) {
 	})
 
 	t.Run("error - good configs, request body json decode to rollbar err", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest("POST", "/notify?auth=abc123", nil) // can't decode nil
 
@@ -221,7 +221,7 @@ func TestServeHttp(t *testing.T) {
 	})
 
 	t.Run("error - failed to create post for whatever reason", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		w := httptest.NewRecorder()
 		payload, _ := json.Marshal(make(map[string]interface{}))
 		r := httptest.NewRequest("POST", "/notify?auth=abc123", bytes.NewReader(payload))
@@ -248,7 +248,7 @@ func TestServeHttp(t *testing.T) {
 	})
 
 	t.Run("ok - query team, channel present and exist", func(t *testing.T) {
-		p := &Plugin{}
+		p := &RollbarPlugin{}
 		w := httptest.NewRecorder()
 		payload := loadJsonFile(t, "new_item.json")
 		r := httptest.NewRequest("POST", "/notify?auth=abc123&team=existingTeam&channel=existingChannel", bytes.NewReader(payload))

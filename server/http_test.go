@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/model"
@@ -13,6 +15,16 @@ import (
 	"github.com/mattermost/mattermost-server/plugin/plugintest"
 	"github.com/mattermost/mattermost-server/plugin/plugintest/mock"
 )
+
+func loadJsonFile(t *testing.T, name string) []byte {
+	path := filepath.Join("testdata", name)
+
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return bytes
+}
 
 type ServeHTTPTest struct {
 	name string
@@ -238,17 +250,55 @@ func TestServeHttp(t *testing.T) {
 	t.Run("ok - query team, channel present and exist", func(t *testing.T) {
 		p := &Plugin{}
 		w := httptest.NewRecorder()
-		payload, _ := json.Marshal(make(map[string]interface{}))
+		payload := loadJsonFile(t, "new_item.json")
 		r := httptest.NewRequest("POST", "/notify?auth=abc123&team=existingTeam&channel=existingChannel", bytes.NewReader(payload))
+
+		itemLink := "https://rollbar.com/item/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
+		occurrenceLink := "https://rollbar.com/occurrence/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
+		createPostCalledWith := &model.Post{
+			ChannelId: "existingChannelId",
+			UserId:    "userId",
+			Type:      model.POST_SLACK_ATTACHMENT,
+			Props: map[string]interface{}{
+				"from_webhook":  "true",
+				"use_user_icon": "true",
+				"attachments": []*model.SlackAttachment{
+					&model.SlackAttachment{
+						Color:    "#ff0000",
+						Fallback: "[live] New Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+						Fields: []*model.SlackAttachmentField{
+							&model.SlackAttachmentField{
+								Short: true,
+								Title: "Environment",
+								Value: "live",
+							},
+							&model.SlackAttachmentField{
+								Short: true,
+								Title: "Framework",
+								Value: "flask",
+							},
+							&model.SlackAttachmentField{
+								Short: true,
+								Title: "Links",
+								Value: fmt.Sprintf("[Item](%s) | [Occurrence](%s)", itemLink, occurrenceLink),
+							},
+						},
+						Title:     "New Error",
+						TitleLink: itemLink,
+						Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+					},
+				},
+			},
+		}
 
 		api := &plugintest.API{}
 		api.On("LogError", mock.Anything).Return(nil)
-		api.On("GetTeamByName", "existingTeam").Return(&model.Team{Id: "teamId"}, nil)
-		api.On("GetChannelByName", "teamId", "existingChannel", false).Return(&model.Channel{Id: "channelId"}, nil)
-		api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(nil, nil)
+		api.On("GetTeamByName", "existingTeam").Return(&model.Team{Id: "existingTeamId"}, nil)
+		api.On("GetChannelByName", "existingTeamId", "existingChannel", false).Return(&model.Channel{Id: "existingChannelId"}, nil)
+		api.On("CreatePost", createPostCalledWith).Return(nil, nil)
 		p.SetAPI(api)
 
-		config := &configuration{Secret: "abc123", teamId: "teamId", channelId: "channelId"}
+		config := &configuration{Secret: "abc123", userId: "userId", teamId: "teamId", channelId: "channelId"}
 		p.setConfiguration(config)
 
 		p.ServeHTTP(&plugin.Context{}, w, r)

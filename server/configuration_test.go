@@ -96,135 +96,154 @@ func TestGetSetConfiguration(t *testing.T) {
 }
 
 func TestOnConfigurationChange(t *testing.T) {
-	t.Run("ok", func(t *testing.T) {
-		p := &RollbarPlugin{}
-		config := &configuration{
-			Username:       "username",
-			DefaultTeam:    "default-team",
-			DefaultChannel: "default-channel",
-		}
+	for name, test := range map[string]struct {
+		SetupAPI              func(*plugintest.API, *configuration) *plugintest.API
+		Configuration         *configuration
+		ExpectedConfiguration *configuration
+		ShouldError           bool
+	}{
+		"ok": {
+			SetupAPI: func(api *plugintest.API, config *configuration) *plugintest.API {
+				api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
+					*dest.(*configuration) = *config
+					return nil
+				})
+				api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
+				api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
+				api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(&model.Channel{Id: "channelId"}, nil)
+				api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
+				return api
+			},
+			Configuration: &configuration{
+				Username:       "username",
+				DefaultTeam:    "default-team",
+				DefaultChannel: "default-channel",
+			},
+			ExpectedConfiguration: &configuration{
+				Username:       "username",
+				DefaultTeam:    "default-team",
+				DefaultChannel: "default-channel",
+				teamId:         "teamId",
+				channelId:      "channelId",
+				userId:         "userId",
+			},
+			ShouldError: false,
+		},
+		"load configuration error": {
+			SetupAPI: func(api *plugintest.API, config *configuration) *plugintest.API {
+				api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(&model.AppError{})
+				return api
+			},
+			Configuration:         &configuration{},
+			ExpectedConfiguration: &configuration{},
+			ShouldError:           true,
+		},
+		"ensureDefaultUserExists error": {
+			SetupAPI: func(api *plugintest.API, config *configuration) *plugintest.API {
+				api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
+					*dest.(*configuration) = *config
+					return nil
+				})
+				api.On("GetUserByUsername", "username").Return(nil, nil)
+				api.On("LogWarn", mock.Anything).Return(nil)
+				return api
+			},
+			Configuration:         &configuration{Username: "username"},
+			ExpectedConfiguration: &configuration{Username: "username"},
+			ShouldError:           true,
+		},
+		"ensureDefaultTeamExists error": {
+			SetupAPI: func(api *plugintest.API, config *configuration) *plugintest.API {
+				api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
+					*dest.(*configuration) = *config
+					return nil
+				})
+				api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
+				api.On("GetTeamByName", "default-team").Return(nil, nil)
+				api.On("LogWarn", mock.Anything).Return(nil)
+				return api
+			},
+			Configuration: &configuration{
+				Username:    "username",
+				DefaultTeam: "default-team",
+			},
+			ExpectedConfiguration: &configuration{
+				Username:    "username",
+				DefaultTeam: "default-team",
+			},
+			ShouldError: true,
+		},
+		"ensureDefaultChannelExists error": {
+			SetupAPI: func(api *plugintest.API, config *configuration) *plugintest.API {
+				api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
+					*dest.(*configuration) = *config
+					return nil
+				})
+				api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
+				api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
+				api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(nil, nil)
+				api.On("LogWarn", mock.Anything).Return(nil)
+				return api
+			},
+			Configuration: &configuration{
+				Username:       "username",
+				DefaultTeam:    "default-team",
+				DefaultChannel: "default-channel",
+			},
+			ExpectedConfiguration: &configuration{
+				Username:       "username",
+				DefaultTeam:    "default-team",
+				DefaultChannel: "default-channel",
+			},
+			ShouldError: true,
+		},
+		"register command error": {
+			SetupAPI: func(api *plugintest.API, config *configuration) *plugintest.API {
+				api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
+					*dest.(*configuration) = *config
+					return nil
+				})
+				api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
+				api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
+				api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(&model.Channel{Id: "channelId"}, nil)
+				api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(&model.AppError{Message: "error"})
+				return api
+			},
+			Configuration: &configuration{
+				Username:       "username",
+				DefaultTeam:    "default-team",
+				DefaultChannel: "default-channel",
+			},
+			ExpectedConfiguration: &configuration{
+				Username:       "username",
+				DefaultTeam:    "default-team",
+				DefaultChannel: "default-channel",
+			},
+			ShouldError: true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			api := test.SetupAPI(&plugintest.API{}, test.Configuration)
+			defer api.AssertExpectations(t)
+			p := &RollbarPlugin{}
+			p.SetAPI(api)
+			p.setConfiguration(test.Configuration)
 
-		api := &plugintest.API{}
-		api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
-			*dest.(*configuration) = *config
-			return nil
+			err := p.OnConfigurationChange()
+			if *test.ExpectedConfiguration != *p.getConfiguration() {
+				t.Errorf("Expected: %s\nActual: %s", *test.ExpectedConfiguration, *p.getConfiguration())
+			}
+			if test.ShouldError {
+				if err == nil {
+					t.Error("Expected an error, got nil instead")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Error: %s", err.Error())
+				}
+			}
 		})
-		api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
-		api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
-		api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(&model.Channel{Id: "channelId"}, nil)
-		api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
-		p.SetAPI(api)
-
-		result := p.OnConfigurationChange()
-		if result != nil {
-			t.Error("encountered an error within configuration change validation")
-		}
-	})
-
-	t.Run("load configuration error", func(t *testing.T) {
-		p := &RollbarPlugin{}
-		api := &plugintest.API{}
-		api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return((*model.AppError)(nil))
-		p.SetAPI(api)
-
-		result := p.OnConfigurationChange()
-		if result == nil {
-			t.Error("load plugin configuration error did not propagate error")
-		}
-	})
-
-	t.Run("ensureDefaultUserExists error", func(t *testing.T) {
-		p := &RollbarPlugin{}
-		config := &configuration{Username: "username"}
-
-		api := &plugintest.API{}
-		api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
-			*dest.(*configuration) = *config
-			return nil
-		})
-		api.On("GetUserByUsername", "username").Return(nil, nil)
-		api.On("LogWarn", mock.Anything).Return(nil)
-		p.SetAPI(api)
-
-		result := p.OnConfigurationChange()
-		if result == nil {
-			t.Error("ensure default user exists error did not propagate error")
-		}
-	})
-
-	t.Run("ensureDefaultTeamExists error", func(t *testing.T) {
-		p := &RollbarPlugin{}
-		config := &configuration{
-			Username:    "username",
-			DefaultTeam: "default-team",
-		}
-
-		api := &plugintest.API{}
-		api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
-			*dest.(*configuration) = *config
-			return nil
-		})
-		api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
-		api.On("GetTeamByName", "default-team").Return(nil, nil)
-		api.On("LogWarn", mock.Anything).Return(nil)
-		p.SetAPI(api)
-
-		result := p.OnConfigurationChange()
-		if result == nil {
-			t.Error("ensure default team exists error did not propagate error")
-		}
-	})
-
-	t.Run("ensureDefaultChannelExists error", func(t *testing.T) {
-		p := &RollbarPlugin{}
-		config := &configuration{
-			Username:       "username",
-			DefaultTeam:    "default-team",
-			DefaultChannel: "default-channel",
-		}
-
-		api := &plugintest.API{}
-		api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
-			*dest.(*configuration) = *config
-			return nil
-		})
-		api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
-		api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
-		api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(nil, nil)
-		api.On("LogWarn", mock.Anything).Return(nil)
-		p.SetAPI(api)
-
-		result := p.OnConfigurationChange()
-		if result == nil {
-			t.Error("ensure default channel exists error did not propagate error")
-		}
-	})
-
-	t.Run("register command error", func(t *testing.T) {
-		p := &RollbarPlugin{}
-		config := &configuration{
-			Username:       "username",
-			DefaultTeam:    "default-team",
-			DefaultChannel: "default-channel",
-		}
-
-		api := &plugintest.API{}
-		api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
-			*dest.(*configuration) = *config
-			return nil
-		})
-		api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
-		api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
-		api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(&model.Channel{Id: "channelId"}, nil)
-		api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(&model.AppError{Message: "error"})
-		api.On("LogWarn", mock.Anything).Return(nil)
-		p.SetAPI(api)
-
-		result := p.OnConfigurationChange()
-		if result == nil {
-			t.Error("register command error did not propagate error")
-		}
-	})
+	}
 }
 
 func TestEnsureDefaultTeamExists(t *testing.T) {

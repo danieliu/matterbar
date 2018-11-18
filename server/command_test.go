@@ -9,27 +9,34 @@ import (
 	"github.com/mattermost/mattermost-server/plugin/plugintest/mock"
 )
 
-type GetUsernameTest struct {
-	Map      map[string]bool
-	Expected string
-}
-
 func TestGetUsernameList(t *testing.T) {
 	noUser := make(map[string]bool)
 	singleUser := map[string]bool{"daniel": true}
-	multipleUser := map[string]bool{"daniel": true, "eric": true}
+	multipleUsers := map[string]bool{"daniel": true, "eric": true}
 
-	testcases := []GetUsernameTest{
-		{noUser, "None"},
-		{singleUser, "@daniel"},
-		{multipleUser, "@daniel, @eric"},
-	}
-
-	for _, test := range testcases {
-		result := GetUsernameList(test.Map)
-		if result != test.Expected {
-			t.Errorf("Expected: %s\nActual: %s", test.Expected, result)
-		}
+	for name, test := range map[string]struct {
+		Map      map[string]bool
+		Expected string
+	}{
+		"no users": {
+			Map:      noUser,
+			Expected: "None",
+		},
+		"single user": {
+			Map:      singleUser,
+			Expected: "@daniel",
+		},
+		"multiple users": {
+			Map:      multipleUsers,
+			Expected: "@daniel, @eric",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			result := GetUsernameList(test.Map)
+			if result != test.Expected {
+				t.Errorf("Expected: %s\nActual: %s", test.Expected, result)
+			}
+		})
 	}
 }
 

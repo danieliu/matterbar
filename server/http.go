@@ -110,6 +110,7 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	environment := rollbar.Data.Item.Environment
 	framework := lastOccurrence.Framework
+	language := lastOccurrence.Language
 	itemLink := fmt.Sprintf(
 		"https://rollbar.com/item/uuid/?uuid=%s",
 		lastOccurrence.Uuid)
@@ -135,6 +136,11 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			Short: true,
 			Title: "Framework",
 			Value: framework,
+		},
+		&model.SlackAttachmentField{
+			Short: true,
+			Title: "Language",
+			Value: language,
 		},
 		&model.SlackAttachmentField{
 			Short: true,

@@ -41,6 +41,11 @@ func TestServeHttp(t *testing.T) {
 		},
 		&model.SlackAttachmentField{
 			Short: true,
+			Title: "Language",
+			Value: "python 2.7.14",
+		},
+		&model.SlackAttachmentField{
+			Short: true,
 			Title: "Links",
 			Value: fmt.Sprintf("[Item](%s) | [Occurrence](%s)", itemLink, occurrenceLink),
 		},

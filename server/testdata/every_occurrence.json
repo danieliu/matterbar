@@ -1,0 +1,151 @@
+{
+  "data": {
+    "item": {
+      "activating_occurrence_id": 58104173924,
+      "assigned_user_id": null,
+      "counter": 4,
+      "environment": "live",
+      "first_occurrence_id": 58104173924,
+      "first_occurrence_timestamp": 1541827731,
+      "framework": 16,
+      "group_item_id": null,
+      "group_status": 1,
+      "hash": "2824ecb26f4f26893f0d4bf3e0dd841dc5431f98",
+      "id": 589557573,
+      "integrations_data": {},
+      "last_activated_timestamp": 1541827731,
+      "last_modified_by": 2147,
+      "last_occurrence_id": 58854318068,
+      "last_occurrence_timestamp": 1542604203,
+      "level": 40,
+      "level_lock": 0,
+      "platform": 0,
+      "project_id": 224316,
+      "public_item_id": null,
+      "resolved_in_version": null,
+      "status": 1,
+      "title": "TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
+      "title_lock": 0,
+      "total_occurrences": 20,
+      "unique_occurrences": 1
+    },
+    "occurrence": {
+      "body": {
+        "trace": {
+          "exception": {
+            "class": "TypeError",
+            "message": "'NoneType' object has no attribute '__getitem__'"
+          },
+          "frames": [
+            {
+              "args": [
+                "<class 'flask.app.Flask'>",
+                "{'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_ACCEPT_LANGUAGE': 'en-US,en;q=0.9', 'HTTP_CONNECTION': 'keep-alive', 'HTTP_COOKIE': 'ajs_group_id=null; ajs_user_id=%22irn5ndj1jibi5...js_anonymous_id=%2200000000000000000000000000%22', 'HTTP_DNT': '1', 'HTTP_HOST': '127.0.0.1:5000', 'HTTP_UPGRADE_INSECURE_REQUESTS': '1', 'HTTP_USER_AGENT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6)...L, like Gecko) Chrome/70.0.3538.77 Safari/537.36', 'PATH_INFO': '/', ...}",
+                "<type 'function'>"
+              ],
+              "code": "response = self.full_dispatch_request()",
+              "filename": "/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+              "lineno": 1817,
+              "method": "wsgi_app"
+            },
+            {
+              "args": [
+                "<class 'flask.app.Flask'>"
+              ],
+              "code": "rv = self.handle_user_exception(e)",
+              "filename": "/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+              "lineno": 1477,
+              "method": "full_dispatch_request"
+            },
+            {
+              "args": [
+                "<class 'flask.app.Flask'>",
+                "<type 'exceptions.TypeError'>"
+              ],
+              "code": "reraise(exc_type, exc_value, tb)",
+              "filename": "/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+              "lineno": 1381,
+              "method": "handle_user_exception"
+            },
+            {
+              "args": [
+                "<class 'flask.app.Flask'>"
+              ],
+              "code": "rv = self.dispatch_request()",
+              "filename": "/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+              "lineno": 1475,
+              "method": "full_dispatch_request"
+            },
+            {
+              "args": [
+                "<class 'flask.app.Flask'>"
+              ],
+              "code": "return self.view_functions[rule.endpoint](**req.view_args)",
+              "filename": "/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+              "lineno": 1461,
+              "method": "dispatch_request"
+            },
+            {
+              "code": "x[5]",
+              "filename": "hello.py",
+              "lineno": 51,
+              "locals": {
+                "x": null
+              },
+              "method": "hello"
+            }
+          ]
+        }
+      },
+      "context": "/something",
+      "environment": "live",
+      "framework": "flask",
+      "language": "python 2.7.14",
+      "level": "error",
+      "metadata": {
+        "customer_timestamp": 1542604203
+      },
+      "notifier": {
+        "name": "pyrollbar",
+        "version": "0.12.1"
+      },
+      "person": {
+        "email": "test@example.com",
+        "id": "1020",
+        "username": "danieliu"
+      },
+      "request": {
+        "GET": {},
+        "POST": {},
+        "files_keys": [],
+        "headers": {
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+          "Accept-Encoding": "gzip, deflate, br",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          "Cookie": "ajs_group_id=null; ajs_user_id=%22irn5ndj1jibi5ko8xekbug8cce%22; ajs_anonymous_id=%2200000000000000000000000000%22",
+          "Dnt": "1",
+          "Host": "127.0.0.1:5000",
+          "Pragma": "no-cache",
+          "Upgrade-Insecure-Requests": "1",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36"
+        },
+        "method": "GET",
+        "url": "http://127.0.0.1:5000/something",
+        "user_ip": "127.0.0.1"
+      },
+      "server": {
+        "argv": [
+          "hello.py"
+        ],
+        "host": "danieliu.local",
+        "pid": 97628,
+        "root": "/rollbar-flask-example"
+      },
+      "timestamp": 1542604203,
+      "uuid": "2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
+    }
+  },
+  "event_name": "occurrence"
+}

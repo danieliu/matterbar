@@ -66,6 +66,17 @@ func TestServeHttp(t *testing.T) {
 			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
 		},
 	}
+	withOccurrenceNotifyAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ff0000",
+			Fallback:  "[live] Occurrence - Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+			Fields:    attachmentFields,
+			Pretext:   "@daniel, @eric",
+			Title:     "Occurrence - Error",
+			TitleLink: itemLink,
+			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+		},
+	}
 
 	nonNotifyOverridePost := &model.Post{
 		ChannelId: "existingChannelId",
@@ -95,6 +106,16 @@ func TestServeHttp(t *testing.T) {
 			"from_webhook":  "true",
 			"use_user_icon": "true",
 			"attachments":   withNotifyAttachment,
+		},
+	}
+	occurrencePost := &model.Post{
+		ChannelId: "channelId",
+		UserId:    "userId",
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments":   withOccurrenceNotifyAttachment,
 		},
 	}
 
@@ -297,6 +318,24 @@ func TestServeHttp(t *testing.T) {
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "new_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - occurrence json": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
+				api.On("CreatePost", occurrencePost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "every_occurrence.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",

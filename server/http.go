@@ -12,6 +12,7 @@ import (
 
 var EventToColor = map[string]string{
 	"new_item":         "#ff0000", // red
+	"occurrence":       "#ff0000", // red
 	"reactivated_item": "#ffff00", // yellow
 	"exp_repeat_item":  "#800080", // purple
 	"item_velocity":    "#ffa500", // orange
@@ -103,6 +104,10 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	title := rollbar.eventNameToTitle()
 	lastOccurrence := rollbar.Data.Item.LastOccurrence
+	// event type `occurrence` has data under `occurrence` instead of `last_occurrence`
+	if lastOccurrence == nil {
+		lastOccurrence = rollbar.Data.Occurrence
+	}
 	environment := rollbar.Data.Item.Environment
 	framework := lastOccurrence.Framework
 	itemLink := fmt.Sprintf(

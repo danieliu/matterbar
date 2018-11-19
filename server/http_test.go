@@ -28,39 +28,73 @@ func TestServeHttp(t *testing.T) {
 	emptyBody := []byte("{}")
 	itemLink := "https://rollbar.com/item/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
 	occurrenceLink := "https://rollbar.com/occurrence/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
-	createPostCalledWith := &model.Post{
+	attachmentFields := []*model.SlackAttachmentField{
+		&model.SlackAttachmentField{
+			Short: true,
+			Title: "Environment",
+			Value: "live",
+		},
+		&model.SlackAttachmentField{
+			Short: true,
+			Title: "Framework",
+			Value: "flask",
+		},
+		&model.SlackAttachmentField{
+			Short: true,
+			Title: "Links",
+			Value: fmt.Sprintf("[Item](%s) | [Occurrence](%s)", itemLink, occurrenceLink),
+		},
+	}
+	nonNotifyAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ff0000",
+			Fallback:  "[live] New Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+			Fields:    attachmentFields,
+			Title:     "New Error",
+			TitleLink: itemLink,
+			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+		},
+	}
+	withNotifyAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ff0000",
+			Fallback:  "[live] New Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+			Fields:    attachmentFields,
+			Pretext:   "@daniel, @eric",
+			Title:     "New Error",
+			TitleLink: itemLink,
+			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+		},
+	}
+
+	nonNotifyOverridePost := &model.Post{
 		ChannelId: "existingChannelId",
 		UserId:    "userId",
 		Type:      model.POST_SLACK_ATTACHMENT,
 		Props: map[string]interface{}{
 			"from_webhook":  "true",
 			"use_user_icon": "true",
-			"attachments": []*model.SlackAttachment{
-				&model.SlackAttachment{
-					Color:    "#ff0000",
-					Fallback: "[live] New Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
-					Fields: []*model.SlackAttachmentField{
-						&model.SlackAttachmentField{
-							Short: true,
-							Title: "Environment",
-							Value: "live",
-						},
-						&model.SlackAttachmentField{
-							Short: true,
-							Title: "Framework",
-							Value: "flask",
-						},
-						&model.SlackAttachmentField{
-							Short: true,
-							Title: "Links",
-							Value: fmt.Sprintf("[Item](%s) | [Occurrence](%s)", itemLink, occurrenceLink),
-						},
-					},
-					Title:     "New Error",
-					TitleLink: itemLink,
-					Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
-				},
-			},
+			"attachments":   nonNotifyAttachment,
+		},
+	}
+	nonNotifyPost := &model.Post{
+		ChannelId: "channelId",
+		UserId:    "userId",
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments":   nonNotifyAttachment,
+		},
+	}
+	withNotifyPost := &model.Post{
+		ChannelId: "channelId",
+		UserId:    "userId",
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments":   withNotifyAttachment,
 		},
 	}
 
@@ -180,7 +214,8 @@ func TestServeHttp(t *testing.T) {
 		},
 		"error - failed to create post for whatever reason": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
-				api.On("LogError", mock.Anything).Return(nil)
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("LogError", mock.AnythingOfType("string")).Return(nil)
 				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(nil, &model.AppError{Where: "server/http", Message: "error", DetailedError: "detailed error"})
 				return api
 			},
@@ -195,15 +230,72 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusInternalServerError,
 			ExpectedResponse: "server/http: error, detailed error\n",
 		},
-		"ok - query team, channel present and exist": {
+		"ok - error in KVGet for notify users logged and ignored": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), &model.AppError{})
+				api.On("LogWarn", mock.AnythingOfType("string")).Return(nil)
+				api.On("CreatePost", nonNotifyPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "new_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - error in json unmarshal for notify users logged and ignored": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(`{"this":error`), nil)
+				api.On("LogWarn", mock.AnythingOfType("string")).Return(nil)
+				api.On("CreatePost", nonNotifyPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "new_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - query params team, channel present and exist": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "existingChannelId").Return([]byte(""), nil)
 				api.On("GetTeamByName", "existingTeam").Return(&model.Team{Id: "existingTeamId"}, nil)
 				api.On("GetChannelByName", "existingTeamId", "existingChannel", false).Return(&model.Channel{Id: "existingChannelId"}, nil)
-				api.On("CreatePost", createPostCalledWith).Return(nil, nil)
+				api.On("CreatePost", nonNotifyOverridePost).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
 			Url:    "/notify?auth=abc123&team=existingTeam&channel=existingChannel",
+			Body:   loadJsonFile(t, "new_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - notifies users in pretext": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
+				api.On("CreatePost", withNotifyPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",

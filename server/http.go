@@ -138,25 +138,43 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	if _, err := p.API.CreatePost(&model.Post{
+	usersToNotify, err := p.API.KVGet(channelId)
+	if err != nil {
+		p.API.LogWarn(fmt.Sprintf("Error fetching users to notify in channel %s", channelId))
+	}
+	usersMap := make(map[string]bool)
+	if len(usersToNotify) > 0 {
+		if err := json.Unmarshal(usersToNotify, &usersMap); err != nil {
+			p.API.LogWarn(fmt.Sprintf("Error parsing users to notify: %s", err.Error()))
+		}
+	}
+	pretext := GetUsernameList(usersMap)
+
+	attachment := &model.SlackAttachment{
+		Color:     EventToColor[rollbar.EventName],
+		Fallback:  fallback,
+		Fields:    fields,
+		Title:     title,
+		TitleLink: itemLink,
+		Text:      fmt.Sprintf("```\n%s\n```", eventText),
+	}
+
+	if pretext != "None" {
+		attachment.Pretext = pretext
+	}
+
+	post := &model.Post{
 		ChannelId: channelId,
 		UserId:    configuration.userId,
 		Type:      model.POST_SLACK_ATTACHMENT,
 		Props: map[string]interface{}{
 			"from_webhook":  "true",
 			"use_user_icon": "true",
-			"attachments": []*model.SlackAttachment{
-				&model.SlackAttachment{
-					Color:     EventToColor[rollbar.EventName],
-					Fallback:  fallback,
-					Fields:    fields,
-					Title:     title,
-					TitleLink: itemLink,
-					Text:      fmt.Sprintf("```\n%s\n```", eventText),
-				},
-			},
+			"attachments":   []*model.SlackAttachment{attachment},
 		},
-	}); err != nil {
+	}
+
+	if _, err := p.API.CreatePost(post); err != nil {
 		p.API.LogError(fmt.Sprintf("Error creating a post: %s", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

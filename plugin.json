@@ -11,7 +11,7 @@
         }
     },
     "settings_schema": {
-        "footer": "Configure Rollbar webhook notification settings at `https://rollbar.com/<user>/<project>/settings/notifications/`. Point the webhook URL to Mattermost with the appropriate query params, e.g. `https://<mattermost-instance>.com/plugins/matterbar/notify?auth=<auth-secret>&team=<team-name>&channel=<channel-name>`",
+        "footer": "Configure Rollbar webhook notification settings at `https://rollbar.com/<user>/<project>/settings/notifications/`.\n\nPoint the webhook URL to Mattermost with the appropriate query params, e.g.\n\n`https://<mattermost-instance>.com/plugins/matterbar/notify?auth=<auth-secret>&team=<team-name>&channel=<channel-name>`",
         "header": "",
         "settings": [
             {

@@ -20,10 +20,16 @@ Configure the plugin itself in **System Console -> Plugins -> Matterbar**.
 
 At the very least, hit the auth secret **Regenerate** button, and input a **Username**. If any of these are misconfigured, e.g. a default team or channel does not exist, the plugin will log the error to the Mattermost system logs.
 
-On the Rollbar side, configure your webhooks at `https://rollbar.com/<user-or-organization>/project/settings/notifications/webhook/` .
-Set the URL to point to your Mattermost instance, and the plugin's custom webhook endpoint at `https://<mattermost-server-instance>.com/plugins/matterbar/notify?auth=<auth-secret>&team=<team-name>&channel=<channel-name>` .
+On the Rollbar side, configure your webhooks at
+
+`https://rollbar.com/<user-or-organization>/project/settings/notifications/webhook/` .
+
+Set the URL to point to your Mattermost instance, and the plugin's custom webhook endpoint at
+
+`https://<mattermost-server-instance>.com/plugins/matterbar/notify?auth=<auth-secret>&team=<team-name>&channel=<channel-name>` .
 
 For example:
+
 https://mattermost.example.com/plugins/matterbar/notify?auth=YT5QclfXXrLyMDl-zw2bLv0aD0TlSX13&team=developers&channel=rollbars
 
 `team` and `channel` can be omitted if the defaults have been configured. They can also be configured on a per webhook rule basis to customize where Rollbar notifications will be posted.

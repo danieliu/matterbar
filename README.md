@@ -22,7 +22,7 @@ At the very least, hit the auth secret **Regenerate** button, and input a **User
 
 On the Rollbar side, configure your webhooks at
 
-`https://rollbar.com/<user-or-organization>/project/settings/notifications/webhook/` .
+`https://rollbar.com/<user-or-organization>/<project>/settings/notifications/webhook/` .
 
 Set the URL to point to your Mattermost instance, and the plugin's custom webhook endpoint at
 

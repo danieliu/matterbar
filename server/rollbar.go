@@ -97,8 +97,8 @@ type Rollbar struct {
 			TotalOccurrences         int             `json:"total_occurrences"`
 			UniqueOccurrences        *int            `json:"unique_occurrences"`
 		} `json:"item"`
-		Occurrence 				 *LastOccurrence `json:"occurrence"`
-		Occurrences int `json:"occurrences"`
+		Occurrence  *LastOccurrence `json:"occurrence"`
+		Occurrences int             `json:"occurrences"`
 		Trigger     struct {
 			Threshold             int    `json:"threshold"`
 			WindowSize            int    `json:"window_size"`

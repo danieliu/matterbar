@@ -1,5 +1,5 @@
 {
-    "description": "A Mattermost plugin to receive and handle Rollbar webhook events",
+    "description": "A Mattermost plugin integration with Rollbar webhook events",
     "id": "matterbar",
     "name": "Matterbar",
     "server": {
@@ -11,7 +11,7 @@
         }
     },
     "settings_schema": {
-        "footer": "",
+        "footer": "Configure Rollbar webhook notification settings at `https://rollbar.com/<user>/<project>/settings/notifications/`. Point the webhook URL to Mattermost with the appropriate query params, e.g. `https://<mattermost-instance>.com/plugins/matterbar/notify?auth=<auth-secret>&team=<team-name>&channel=<channel-name>`",
         "header": "",
         "settings": [
             {

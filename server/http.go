@@ -10,6 +10,11 @@ import (
 	"github.com/mattermost/mattermost-server/plugin"
 )
 
+const (
+	postFallbackMaxLength = 500
+	postTextMaxLength     = 6000
+)
+
 var EventToColor = map[string]string{
 	"new_item":         "#ff0000", // red
 	"occurrence":       "#ff0000", // red
@@ -124,7 +129,7 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		eventText = fmt.Sprintf("%s: %s", exceptionClass, exceptionMessage)
 	}
 
-	fallback := fmt.Sprintf("[%s] %s - %s", environment, title, eventText)
+	fallback := fmt.Sprintf("[%s] %s - %s", environment, title, TruncateString(eventText, postFallbackMaxLength))
 
 	fields := []*model.SlackAttachmentField{
 		&model.SlackAttachmentField{
@@ -167,7 +172,7 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		Fields:    fields,
 		Title:     title,
 		TitleLink: itemLink,
-		Text:      fmt.Sprintf("```\n%s\n```", eventText),
+		Text:      fmt.Sprintf("```\n%s\n```", TruncateString(eventText, postTextMaxLength)),
 	}
 
 	if pretext != "None" {

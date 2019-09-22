@@ -18,7 +18,8 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/hashicorp/go-plugin"
+	"github.com/dyatlov/go-opengraph/opengraph"
+	plugin "github.com/hashicorp/go-plugin"
 	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 )
@@ -95,6 +96,7 @@ func init() {
 	gob.Register(map[string]interface{}{})
 	gob.Register(&model.AppError{})
 	gob.Register(&ErrorString{})
+	gob.Register(&opengraph.OpenGraph{})
 }
 
 // These enforce compile time checks to make sure types implement the interface
@@ -195,11 +197,18 @@ func (s *hooksRPCServer) OnActivate(args *Z_OnActivateArgs, returns *Z_OnActivat
 
 	if mmplugin, ok := s.impl.(interface {
 		SetAPI(api API)
-		OnConfigurationChange() error
-	}); !ok {
-	} else {
+		SetHelpers(helpers Helpers)
+	}); ok {
 		mmplugin.SetAPI(s.apiRPCClient)
-		mmplugin.OnConfigurationChange()
+		mmplugin.SetHelpers(&HelpersImpl{API: s.apiRPCClient})
+	}
+
+	if mmplugin, ok := s.impl.(interface {
+		OnConfigurationChange() error
+	}); ok {
+		if err := mmplugin.OnConfigurationChange(); err != nil {
+			fmt.Fprintf(os.Stderr, "[ERROR] call to OnConfigurationChange failed, error: %v", err.Error())
+		}
 	}
 
 	// Capture output of standard logger because go-plugin
@@ -272,7 +281,6 @@ func (g *hooksRPCClient) ServeHTTP(c *Context, w http.ResponseWriter, r *http.Re
 		connection, err := g.muxBroker.Accept(serveHTTPStreamId)
 		if err != nil {
 			g.log.Error("Plugin failed to ServeHTTP, muxBroker couldn't accept connection", mlog.Uint32("serve_http_stream_id", serveHTTPStreamId), mlog.Err(err))
-			http.Error(w, "500 internal server error", http.StatusInternalServerError)
 			return
 		}
 		defer connection.Close()
@@ -280,7 +288,6 @@ func (g *hooksRPCClient) ServeHTTP(c *Context, w http.ResponseWriter, r *http.Re
 		rpcServer := rpc.NewServer()
 		if err := rpcServer.RegisterName("Plugin", &httpResponseWriterRPCServer{w: w}); err != nil {
 			g.log.Error("Plugin failed to ServeHTTP, coulden't register RPC name", mlog.Err(err))
-			http.Error(w, "500 internal server error", http.StatusInternalServerError)
 			return
 		}
 		rpcServer.ServeConn(connection)
@@ -293,7 +300,6 @@ func (g *hooksRPCClient) ServeHTTP(c *Context, w http.ResponseWriter, r *http.Re
 			bodyConnection, err := g.muxBroker.Accept(requestBodyStreamId)
 			if err != nil {
 				g.log.Error("Plugin failed to ServeHTTP, muxBroker couldn't Accept request body connection", mlog.Err(err))
-				http.Error(w, "500 internal server error", http.StatusInternalServerError)
 				return
 			}
 			defer bodyConnection.Close()
@@ -403,7 +409,7 @@ func (g *hooksRPCClient) FileWillBeUploaded(c *Context, info *model.FileInfo, fi
 	}()
 
 	_args := &Z_FileWillBeUploadedArgs{c, info, uploadedFileStreamId, replacementFileStreamId}
-	_returns := &Z_FileWillBeUploadedReturns{}
+	_returns := &Z_FileWillBeUploadedReturns{A: _args.B}
 	if g.implemented[FileWillBeUploadedId] {
 		if err := g.client.Call("Plugin.FileWillBeUploaded", _args, _returns); err != nil {
 			g.log.Error("RPC call FileWillBeUploaded to plugin failed.", mlog.Err(err))
@@ -436,6 +442,87 @@ func (s *hooksRPCServer) FileWillBeUploaded(args *Z_FileWillBeUploadedArgs, retu
 		returns.A, returns.B = hook.FileWillBeUploaded(args.A, args.B, fileReader, returnFileWriter)
 	} else {
 		return fmt.Errorf("Hook FileWillBeUploaded called but not implemented.")
+	}
+	return nil
+}
+
+// MessageWillBePosted is in this file because of the difficulty of identifiying which fields need special behaviour.
+// The special behaviour needed is decoding the returned post into the original one to avoid the unintentional removal
+// of fields by older plugins.
+func init() {
+	hookNameToId["MessageWillBePosted"] = MessageWillBePostedId
+}
+
+type Z_MessageWillBePostedArgs struct {
+	A *Context
+	B *model.Post
+}
+
+type Z_MessageWillBePostedReturns struct {
+	A *model.Post
+	B string
+}
+
+func (g *hooksRPCClient) MessageWillBePosted(c *Context, post *model.Post) (*model.Post, string) {
+	_args := &Z_MessageWillBePostedArgs{c, post}
+	_returns := &Z_MessageWillBePostedReturns{A: _args.B}
+	if g.implemented[MessageWillBePostedId] {
+		if err := g.client.Call("Plugin.MessageWillBePosted", _args, _returns); err != nil {
+			g.log.Error("RPC call MessageWillBePosted to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+func (s *hooksRPCServer) MessageWillBePosted(args *Z_MessageWillBePostedArgs, returns *Z_MessageWillBePostedReturns) error {
+	if hook, ok := s.impl.(interface {
+		MessageWillBePosted(c *Context, post *model.Post) (*model.Post, string)
+	}); ok {
+		returns.A, returns.B = hook.MessageWillBePosted(args.A, args.B)
+
+	} else {
+		return encodableError(fmt.Errorf("Hook MessageWillBePosted called but not implemented."))
+	}
+	return nil
+}
+
+// MessageWillBeUpdated is in this file because of the difficulty of identifiying which fields need special behaviour.
+// The special behavour needed is decoding the returned post into the original one to avoid the unintentional removal
+// of fields by older plugins.
+func init() {
+	hookNameToId["MessageWillBeUpdated"] = MessageWillBeUpdatedId
+}
+
+type Z_MessageWillBeUpdatedArgs struct {
+	A *Context
+	B *model.Post
+	C *model.Post
+}
+
+type Z_MessageWillBeUpdatedReturns struct {
+	A *model.Post
+	B string
+}
+
+func (g *hooksRPCClient) MessageWillBeUpdated(c *Context, newPost, oldPost *model.Post) (*model.Post, string) {
+	_args := &Z_MessageWillBeUpdatedArgs{c, newPost, oldPost}
+	_returns := &Z_MessageWillBeUpdatedReturns{A: _args.B}
+	if g.implemented[MessageWillBeUpdatedId] {
+		if err := g.client.Call("Plugin.MessageWillBeUpdated", _args, _returns); err != nil {
+			g.log.Error("RPC call MessageWillBeUpdated to plugin failed.", mlog.Err(err))
+		}
+	}
+	return _returns.A, _returns.B
+}
+
+func (s *hooksRPCServer) MessageWillBeUpdated(args *Z_MessageWillBeUpdatedArgs, returns *Z_MessageWillBeUpdatedReturns) error {
+	if hook, ok := s.impl.(interface {
+		MessageWillBeUpdated(c *Context, newPost, oldPost *model.Post) (*model.Post, string)
+	}); ok {
+		returns.A, returns.B = hook.MessageWillBeUpdated(args.A, args.B, args.C)
+
+	} else {
+		return encodableError(fmt.Errorf("Hook MessageWillBeUpdated called but not implemented."))
 	}
 	return nil
 }

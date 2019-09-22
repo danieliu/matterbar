@@ -7,12 +7,15 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"regexp"
 )
 
 const (
 	EMOJI_NAME_MAX_LENGTH = 64
 	EMOJI_SORT_BY_NAME    = "name"
 )
+
+var EMOJI_PATTERN = regexp.MustCompile(`:[a-zA-Z0-9_-]+:`)
 
 type Emoji struct {
 	Id        string `json:"id"`
@@ -26,6 +29,11 @@ type Emoji struct {
 func inSystemEmoji(emojiName string) bool {
 	_, ok := SystemEmojis[emojiName]
 	return ok
+}
+
+func GetSystemEmojiId(emojiName string) (string, bool) {
+	id, found := SystemEmojis[emojiName]
+	return id, found
 }
 
 func (emoji *Emoji) IsValid() *AppError {

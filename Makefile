@@ -27,6 +27,9 @@ endif
 deps:
 	dep ensure
 
+deps-update:
+	dep ensure -update
+
 fmt:
 	gofmt -w server
 

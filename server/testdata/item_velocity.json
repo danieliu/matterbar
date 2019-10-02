@@ -1,0 +1,40 @@
+{
+  "data": {
+    "item": {
+      "activating_occurrence_id": 97792411690,
+      "assigned_user_id": null,
+      "counter": 21,
+      "environment": "live",
+      "first_occurrence_id": 97642881390,
+      "first_occurrence_timestamp": 1569206480,
+      "framework": 16,
+      "group_item_id": null,
+      "group_status": 1,
+      "hash": "cb618fdbe26e875de9e6e5fbe1f505505bace158",
+      "id": 782446217,
+      "integrations_data": {},
+      "last_activated_timestamp": 1569305341,
+      "last_modified_by": 8247,
+      "last_occurrence_id": 97792421028,
+      "last_occurrence_timestamp": 1569305347,
+      "level": 40,
+      "level_lock": 0,
+      "platform": 0,
+      "project_id": 224316,
+      "public_item_id": null,
+      "resolved_in_version": null,
+      "status": 1,
+      "title": "Exception: foo",
+      "title_lock": 0,
+      "total_occurrences": 3,
+      "unique_occurrences": 1
+    },
+    "trigger": {
+      "threshold": 5,
+      "window_size": 300,
+      "window_size_description": "5 minutes"
+    },
+    "url": "https://rollbar.com/organization/project/items/12343/"
+  },
+  "event_name": "item_velocity"
+}

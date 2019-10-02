@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 )
 
@@ -12,29 +11,31 @@ type EventNameToTitleTest struct {
 }
 
 func TestEventNameToTitle(t *testing.T) {
-	data := `{"event_name": "%s", "data": {"item": {"last_occurrence": {"level": "error"}}, "trigger": {"threshold": 10, "window_size_description": "5 minutes"}, "occurrences": 10}}`
-	occurrenceSpecific := `{"event_name": "%s", "data": {"item": {"level": 40}, "occurrence": {"level": "error"}}, "trigger": {"threshold": 10, "window_size_description": "5 minutes"}, "occurrences": 10}`
-	testcases := []EventNameToTitleTest{
-		{fmt.Sprintf(data, "new_item"), "New Error"},
-		{fmt.Sprintf(data, "reactivated_item"), "Reactivated Error"},
-		{fmt.Sprintf(data, "reopened_item"), "Reopened Error"},
-		{fmt.Sprintf(data, "resolved_item"), "Resolved Error"},
-		{fmt.Sprintf(data, "exp_repeat_item"), "10th Error"},
-		{fmt.Sprintf(data, "item_velocity"), "10 occurrences in 5 minutes"},
-		{fmt.Sprintf(occurrenceSpecific, "occurrence"), "Occurrence - Error"},
+	for name, test := range map[string]struct {
+		TestFile      string
+		ExpectedTitle string
+	}{
+		"ok - new item": {
+			TestFile:      "new_item.json",
+			ExpectedTitle: "New Error",
+		},
+		"ok - high velocity": {
+			TestFile:      "item_velocity.json",
+			ExpectedTitle: "5 occurrences in 5 minutes",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var rollbar Rollbar
+			data := loadJsonFile(t, test.TestFile)
+			err := json.Unmarshal([]byte(data), &rollbar)
+			if err != nil {
+				t.Fatal(err)
+			}
+			actualTitle := rollbar.eventNameToTitle()
+			if actualTitle != test.ExpectedTitle {
+				t.Errorf("Expected: %s\nActual: %s", test.ExpectedTitle, actualTitle)
+			}
+		})
 	}
 
-	for _, test := range testcases {
-		var rollbar Rollbar
-
-		err := json.Unmarshal([]byte(test.data), &rollbar)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		actual := rollbar.eventNameToTitle()
-		if actual != test.expected {
-			t.Errorf("Expected: %s\nActual: %s", test.expected, actual)
-		}
-	}
 }

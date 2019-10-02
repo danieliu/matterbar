@@ -110,14 +110,6 @@ type Rollbar struct {
 func (rollbar *Rollbar) eventNameToTitle() string {
 	prefix := ""
 	title := ""
-	lastOccurrence := rollbar.Data.Item.LastOccurrence
-
-	// event type `occurrence` has data under `occurrence` instead of `last_occurrence`
-	if lastOccurrence == nil {
-		lastOccurrence = rollbar.Data.Occurrence
-	}
-
-	level := strings.Title(lastOccurrence.Level)
 
 	switch rollbar.EventName {
 	case "new_item":
@@ -137,8 +129,16 @@ func (rollbar *Rollbar) eventNameToTitle() string {
 		title = fmt.Sprintf("%d occurrences in %s", triggerData.Threshold, triggerData.WindowSizeDescription)
 	}
 
-	// non item_velocity case
-	if title == "" {
+	// item velocity (high occurrence) doesn't include LastOccurrence
+	if rollbar.EventName != "item_velocity" {
+		lastOccurrence := rollbar.Data.Item.LastOccurrence
+
+		// event type `occurrence` has data under `occurrence` instead of `last_occurrence`
+		if lastOccurrence == nil {
+			lastOccurrence = rollbar.Data.Occurrence
+		}
+
+		level := strings.Title(lastOccurrence.Level)
 		title = fmt.Sprintf("%s %s", prefix, level)
 	}
 

@@ -1,0 +1,74 @@
+{
+  "data": {
+    "item": {
+      "activating_occurrence_id": 99653289458,
+      "assigned_user_id": null,
+      "counter": 23,
+      "environment": "live",
+      "first_occurrence_id": 99653289458,
+      "first_occurrence_timestamp": 1570415168,
+      "framework": 16,
+      "group_item_id": null,
+      "group_status": 1,
+      "hash": "927c9911656a93aa045a611541d32b108c790b9c",
+      "id": 791055038,
+      "integrations_data": {},
+      "last_activated_timestamp": 1570415168,
+      "last_modified_by": 2147,
+      "last_occurrence": {
+        "body": {
+          "message": {
+            "body": "User 8563892 is missing permissions"
+          }
+        },
+        "environment": "live",
+        "framework": "flask",
+        "language": "python 2.7.14",
+        "level": "error",
+        "metadata": {
+          "access_token": "d5dcc96766534ee388acf9c1df490892",
+          "api_server_hostname": "api10",
+          "customer_timestamp": 1570415168,
+          "debug": {
+            "routes": {
+              "counters": {
+                "post_item": 2987098
+              },
+              "start_time": 1569747889729
+            }
+          },
+          "timestamp_ms": 1570415168535
+        },
+        "notifier": {
+          "name": "pyrollbar",
+          "version": "0.14.7"
+        },
+        "server": {
+          "argv": [
+            "hello.py"
+          ],
+          "host": "danieliu.loca",
+          "pid": 87303,
+          "root": "/opt/virtualenv/rollbar-flask-example"
+        },
+        "timestamp": 1570415168,
+        "uuid": "6fd2252b-3acd-4390-b722-466f5cbbd737"
+      },
+      "last_occurrence_id": 99653289458,
+      "last_occurrence_timestamp": 1570415168,
+      "level": 40,
+      "level_lock": 0,
+      "platform": 0,
+      "project_id": 224316,
+      "public_item_id": null,
+      "resolved_in_version": null,
+      "status": 1,
+      "title": "User 8563892 is missing permissions",
+      "title_lock": 0,
+      "total_occurrences": 1,
+      "unique_occurrences": null
+    },
+    "url": "https://rollbar.com/organization/project/items/12346/"
+  },
+  "event_name": "new_item"
+}

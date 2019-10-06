@@ -5,30 +5,33 @@ import (
 	"strings"
 )
 
+type Trace struct {
+	Exception struct {
+		Class   string `json:"class"`
+		Message string `json:"message"`
+	} `json:"exception"`
+	Frames []struct {
+		Code     string `json:"code"`
+		Filename string `json:"filename"`
+		LineNo   int    `json:"lineno"`
+		Locals   struct {
+			Builtins string `json:"__builtins__"`
+			Doc      string `json:"__doc__"`
+			File     string `json:"__file__"`
+			Name     string `json:"__name__"`
+			Package  string `json:"__package__"`
+			Rollbar  string `json:"rollbar"`
+		} `json:"locals"`
+		Method string `json:"method"`
+	} `json:"frames"`
+}
+
 type OccurrenceBody struct {
 	Message struct {
 		Body string `json:"body"`
 	} `json:"message"`
-	Trace struct {
-		Exception struct {
-			Class   string `json:"class"`
-			Message string `json:"message"`
-		} `json:"exception"`
-		Frames []struct {
-			Code     string `json:"code"`
-			Filename string `json:"filename"`
-			LineNo   int    `json:"lineno"`
-			Locals   struct {
-				Builtins string `json:"__builtins__"`
-				Doc      string `json:"__doc__"`
-				File     string `json:"__file__"`
-				Name     string `json:"__name__"`
-				Package  string `json:"__package__"`
-				Rollbar  string `json:"rollbar"`
-			} `json:"locals"`
-			Method string `json:"method"`
-		} `json:"frames"`
-	} `json:"trace"`
+	Trace      Trace   `json:"trace"`
+	TraceChain []Trace `json:"trace_chain"`
 }
 
 type OccurrenceMetadata struct {
@@ -104,6 +107,7 @@ type Rollbar struct {
 			WindowSize            int    `json:"window_size"`
 			WindowSizeDescription string `json:"window_size_description"`
 		} `json:"trigger"`
+		URL string `json:"url"`
 	} `json:"data"`
 }
 
@@ -125,15 +129,16 @@ func (rollbar *Rollbar) eventNameToTitle() string {
 	case "exp_repeat_item":
 		prefix = fmt.Sprintf("%dth", rollbar.Data.Occurrences)
 	case "item_velocity":
+		// TODO: include level, e.g. error or warning, when rollbar fixes item_velocity
 		triggerData := rollbar.Data.Trigger
 		title = fmt.Sprintf("%d occurrences in %s", triggerData.Threshold, triggerData.WindowSizeDescription)
 	}
 
-	// item velocity (high occurrence) doesn't include LastOccurrence
+	// item_velocity (high occurrence) doesn't include occurrence data
 	if rollbar.EventName != "item_velocity" {
 		lastOccurrence := rollbar.Data.Item.LastOccurrence
 
-		// event type `occurrence` has data under `occurrence` instead of `last_occurrence`
+		// event_name `occurrence` has data under `occurrence` instead of `last_occurrence`
 		if lastOccurrence == nil {
 			lastOccurrence = rollbar.Data.Occurrence
 		}
@@ -143,4 +148,35 @@ func (rollbar *Rollbar) eventNameToTitle() string {
 	}
 
 	return title
+}
+
+func (rollbar *Rollbar) eventText() string {
+	// item_velocity (high occurrence) doesn't include occurrence data
+	if rollbar.Data.Item.LastOccurrence == nil && rollbar.Data.Occurrence == nil {
+		return ""
+	}
+
+	eventMessage := ""
+	occurrenceData := rollbar.Data.Item.LastOccurrence
+	// event_name `occurrence` has data under `occurrence` instead of `last_occurrence`
+	if occurrenceData == nil {
+		occurrenceData = rollbar.Data.Occurrence
+	}
+
+	if occurrenceData.Body.Trace.Exception.Message != "" {
+		// Option 1: trace; single exception with stack trace
+		exception := occurrenceData.Body.Trace.Exception
+		eventMessage = fmt.Sprintf("%s: %s", exception.Class, exception.Message)
+	} else if len(occurrenceData.Body.TraceChain) > 0 {
+		// Option 2: trace_chain; a list of `trace`s (inner exceptions or causes)
+		// first `trace` is the most recent
+		exception := occurrenceData.Body.TraceChain[0].Exception
+		eventMessage = fmt.Sprintf("%s: %s", exception.Class, exception.Message)
+	} else if occurrenceData.Body.Message.Body != "" {
+		// Option 3: message with no stack trace
+		eventMessage = occurrenceData.Body.Message.Body
+	}
+	// TODO: Option 4: crash_report; iOS crash report
+
+	return eventMessage
 }

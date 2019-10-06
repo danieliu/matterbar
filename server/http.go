@@ -122,11 +122,11 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	occurrenceLink := fmt.Sprintf(
 		"https://rollbar.com/occurrence/uuid/?uuid=%s",
 		lastOccurrence.Uuid)
-	eventText := lastOccurrence.Body.Message.Body
+
+	eventText := rollbar.eventText()
 	if eventText == "" {
-		exceptionClass := lastOccurrence.Body.Trace.Exception.Class
-		exceptionMessage := lastOccurrence.Body.Trace.Exception.Message
-		eventText = fmt.Sprintf("%s: %s", exceptionClass, exceptionMessage)
+		p.API.LogWarn(fmt.Sprintf("No %s exception message found. Link: %s", rollbar.EventName, rollbar.Data.URL))
+		eventText = "No exception message found in Rollbar webhook. Check mattermost server logs for more info."
 	}
 
 	fallback := fmt.Sprintf("[%s] %s - %s", environment, title, TruncateString(eventText, postFallbackMaxLength))

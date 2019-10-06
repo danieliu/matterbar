@@ -5,11 +5,6 @@ import (
 	"testing"
 )
 
-type EventNameToTitleTest struct {
-	data     string
-	expected string
-}
-
 func TestEventNameToTitle(t *testing.T) {
 	for name, test := range map[string]struct {
 		TestFile      string
@@ -58,4 +53,41 @@ func TestEventNameToTitle(t *testing.T) {
 		})
 	}
 
+}
+
+func TestEventText(t *testing.T) {
+	for name, test := range map[string]struct {
+		TestFile     string
+		ExpectedText string
+	}{
+		"ok - new item exception data under last_occurrence": {
+			TestFile:     "new_item.json",
+			ExpectedText: "TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
+		},
+		"ok - new item log message no traceback": {
+			TestFile:     "new_item_log_message.json",
+			ExpectedText: "User 8563892 is missing permissions",
+		},
+		"ok - occurrence exception data under occurrence": {
+			TestFile:     "occurrence.json",
+			ExpectedText: "TypeError: 'NoneType' object has no attribute '__getitem__'",
+		},
+		"ok - high velocity missing occurrence data": {
+			TestFile:     "item_velocity.json",
+			ExpectedText: "",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var rollbar Rollbar
+			data := loadJsonFile(t, test.TestFile)
+			err := json.Unmarshal([]byte(data), &rollbar)
+			if err != nil {
+				t.Fatal(err)
+			}
+			actualText := rollbar.eventText()
+			if test.ExpectedText != actualText {
+				t.Errorf("Expected: %s\nActual: %s", test.ExpectedText, actualText)
+			}
+		})
+	}
 }

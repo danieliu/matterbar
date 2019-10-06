@@ -81,6 +81,16 @@ func TestServeHttp(t *testing.T) {
 			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
 		},
 	}
+	expRepeatTraceChainAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#800080",
+			Fallback:  "[live] 10th Error - Exception: foo",
+			Fields:    attachmentFields,
+			Title:     "10th Error",
+			TitleLink: itemLink,
+			Text:      "```\nException: foo\n```",
+		},
+	}
 
 	nonNotifyOverridePost := &model.Post{
 		ChannelId: "existingChannelId",
@@ -120,6 +130,16 @@ func TestServeHttp(t *testing.T) {
 			"from_webhook":  "true",
 			"use_user_icon": "true",
 			"attachments":   occurrenceAttachment,
+		},
+	}
+	expRepeatTraceChainPost := &model.Post{
+		ChannelId: "channelId",
+		UserId:    "userId",
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments":   expRepeatTraceChainAttachment,
 		},
 	}
 
@@ -340,6 +360,24 @@ func TestServeHttp(t *testing.T) {
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "occurrence.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - exp_repeat_item json with trace_chain": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", expRepeatTraceChainPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "exp_repeat_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",

@@ -71,12 +71,11 @@ func TestServeHttp(t *testing.T) {
 			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
 		},
 	}
-	withOccurrenceNotifyAttachment := []*model.SlackAttachment{
+	occurrenceAttachment := []*model.SlackAttachment{
 		&model.SlackAttachment{
 			Color:     "#ff0000",
 			Fallback:  "[live] Occurrence - Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
 			Fields:    attachmentFields,
-			Pretext:   "@daniel, @eric",
 			Title:     "Occurrence - Error",
 			TitleLink: itemLink,
 			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
@@ -120,7 +119,7 @@ func TestServeHttp(t *testing.T) {
 		Props: map[string]interface{}{
 			"from_webhook":  "true",
 			"use_user_icon": "true",
-			"attachments":   withOccurrenceNotifyAttachment,
+			"attachments":   occurrenceAttachment,
 		},
 	}
 
@@ -334,13 +333,13 @@ func TestServeHttp(t *testing.T) {
 		},
 		"ok - occurrence json": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
-				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
 				api.On("CreatePost", occurrencePost).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
-			Body:   loadJsonFile(t, "every_occurrence.json"), // TODO: consolidate occurrence.json
+			Body:   loadJsonFile(t, "occurrence.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",

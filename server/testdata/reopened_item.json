@@ -1,8 +1,8 @@
 {
   "data": {
     "item": {
-      "activating_occurrence_id": 58104173924,
-      "assigned_user_id": null,
+      "activating_occurrence_id": 86843258488,
+      "assigned_user_id": 142069,
       "counter": 4,
       "environment": "live",
       "first_occurrence_id": 58104173924,
@@ -13,14 +13,14 @@
       "hash": "2824ecb26f4f26893f0d4bf3e0dd841dc5431f98",
       "id": 589557573,
       "integrations_data": {},
-      "last_activated_timestamp": 1541827731,
-      "last_modified_by": 2147,
+      "last_activated_timestamp": 1569305294,
+      "last_modified_by": 142069,
       "last_occurrence": {
         "body": {
           "trace": {
             "exception": {
               "class": "TypeError",
-              "message": "unsupported operand type(s) for +=: 'int' and 'str'"
+              "message": "'NoneType' object has no attribute '__getitem__'"
             },
             "frames": [
               {
@@ -54,57 +54,35 @@
                 "method": "dispatch_request"
               },
               {
-                "code": "return something_first_level({\"stuff\": {\"arg1\": 2, \"arg2\": 5, \"arg3\": \"hey\"}})",
+                "code": "x[5]",
                 "filename": "hello.py",
-                "lineno": 78,
-                "method": "something"
-              },
-              {
-                "code": "result = get_sum(stuff)",
-                "filename": "hello.py",
-                "lineno": 71,
-                "method": "something_first_level"
-              },
-              {
-                "argspec": [
-                  "arg_dict"
-                ],
-                "code": "total += v",
-                "filename": "hello.py",
-                "lineno": 65,
+                "lineno": 56,
                 "locals": {
-                  "arg_dict": {
-                    "arg1": 2,
-                    "arg2": 5,
-                    "arg3": "hey"
-                  },
-                  "k": "arg3",
-                  "total": 7,
-                  "v": "hey"
+                  "x": null
                 },
-                "method": "get_sum"
+                "method": "hello"
               }
             ]
           }
         },
-        "context": "/something",
+        "context": "/",
         "environment": "live",
         "framework": "flask",
         "language": "python 2.7.14",
         "level": "error",
         "metadata": {
           "access_token": "d5dcc96766534ee388acf9c1df490892",
-          "api_server_hostname": "api03",
-          "customer_timestamp": 1541827726,
+          "api_server_hostname": "api01",
+          "customer_timestamp": 1569204316,
           "debug": {
             "routes": {
               "counters": {
-                "post_item": 5900512
+                "post_item": 4341247
               },
-              "start_time": 1540925993928
+              "start_time": 1568080219637
             }
           },
-          "timestamp_ms": 1541827731188
+          "timestamp_ms": 1569204316162
         },
         "notifier": {
           "name": "pyrollbar",
@@ -133,7 +111,7 @@
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36"
           },
           "method": "GET",
-          "url": "http://127.0.0.1:5000/something",
+          "url": "http://127.0.0.1:5000/",
           "user_ip": "127.0.0.1"
         },
         "server": {
@@ -141,14 +119,14 @@
             "hello.py"
           ],
           "host": "danieliu.local",
-          "pid": 76703,
-          "root": "/opt/virtualenv/rollbar-flask-example"
+          "pid": 12888,
+          "root": "/opt/code/rollbar-flask-example"
         },
-        "timestamp": 1541827731,
-        "uuid": "2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
+        "timestamp": 1569204316,
+        "uuid": "16812560-c102-49e7-8fbf-39713c0014b4"
       },
-      "last_occurrence_id": 58104173924,
-      "last_occurrence_timestamp": 1541827731,
+      "last_occurrence_id": 97639824872,
+      "last_occurrence_timestamp": 1569204316,
       "level": 40,
       "level_lock": 0,
       "platform": 0,
@@ -156,12 +134,12 @@
       "public_item_id": null,
       "resolved_in_version": null,
       "status": 1,
-      "title": "TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
+      "title": "TypeError: 'NoneType' object has no attribute '__getitem__'",
       "title_lock": 0,
-      "total_occurrences": 1,
+      "total_occurrences": 8,
       "unique_occurrences": 1
     },
-    "url": "https://rollbar.com/organization/project/items/12341/"
+    "url": "https://rollbar.com/organization/project/items/12345/"
   },
-  "event_name": "new_item"
+  "event_name": "reopened_item"
 }

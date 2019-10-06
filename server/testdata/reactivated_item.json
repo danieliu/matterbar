@@ -1,0 +1,157 @@
+{
+  "data": {
+    "item": {
+      "activating_occurrence_id": 98611890129,
+      "assigned_user_id": null,
+      "counter": 20,
+      "environment": "js-sandbox",
+      "first_occurrence_id": 91595798459,
+      "first_occurrence_timestamp": 1565680314,
+      "framework": 7,
+      "group_item_id": null,
+      "group_status": 1,
+      "hash": "c68c737249eba9eae4cf762cae57ab92eb55c7b8",
+      "id": 750356655,
+      "integrations_data": {},
+      "last_activated_timestamp": 1569790882,
+      "last_modified_by": 8247,
+      "last_occurrence": {
+        "body": {
+          "telemetry": [
+            {
+              "body": {
+                "message": "hello world"
+              },
+              "level": "log",
+              "source": "client",
+              "timestamp_ms": 1569790882749,
+              "type": "log"
+            },
+            {
+              "body": {
+                "message": "Assignment to constant variable.",
+                "stack": "TypeError: Assignment to constant variable.\n    at something (http://127.0.0.1:5000/static/test.js:5:11)\n    at http://127.0.0.1:5000/static/test.js:9:1"
+              },
+              "level": "error",
+              "source": "client",
+              "timestamp_ms": 1569790882751,
+              "type": "error",
+              "uuid": "271f5ed4-3cbe-4d3a-d4d6-b37a550c7b45"
+            }
+          ],
+          "trace": {
+            "exception": {
+              "class": "TypeError",
+              "description": "Uncaught TypeError: Assignment to constant variable.",
+              "message": "Assignment to constant variable."
+            },
+            "frames": [
+              {
+                "colno": 1,
+                "filename": "http://127.0.0.1:5000/static/test.js",
+                "lineno": 9,
+                "method": "[anonymous]"
+              },
+              {
+                "colno": 11,
+                "filename": "http://127.0.0.1:5000/static/test.js",
+                "lineno": 5,
+                "method": "something"
+              }
+            ]
+          }
+        },
+        "client": {
+          "javascript": {
+            "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36",
+            "cookie_enabled": true,
+            "language": "en-US",
+            "plugins": [
+              {
+                "description": "Portable Document Format",
+                "name": "Chrome PDF Plugin"
+              },
+              {
+                "description": "",
+                "name": "Chrome PDF Viewer"
+              },
+              {
+                "description": "",
+                "name": "Native Client"
+              }
+            ],
+            "screen": {
+              "height": 900,
+              "width": 1440
+            }
+          },
+          "runtime_ms": 11,
+          "timestamp": 1569790883
+        },
+        "context": "",
+        "endpoint": "api.rollbar.com/api/1/item/",
+        "environment": "js-sandbox",
+        "framework": "browser-js",
+        "language": "javascript",
+        "level": "error",
+        "metadata": {
+          "access_token": "d5dcc96766534ee388acf9c1df490892",
+          "api_server_hostname": "api13",
+          "debug": {
+            "routes": {
+              "counters": {
+                "post_item": 187237
+              },
+              "start_time": 1569747708015
+            }
+          },
+          "fingerprint_version": 1,
+          "timestamp_ms": 1569790882954
+        },
+        "notifier": {
+          "configured_options": {
+            "captureUncaught": true,
+            "captureUnhandledRejections": true,
+            "payload": {
+              "environment": "js-sandbox"
+            }
+          },
+          "diagnostic": {
+            "raw_error": {
+              "constructor_name": "TypeError",
+              "message": "Assignment to constant variable.",
+              "name": "TypeError",
+              "stack": "TypeError: Assignment to constant variable.\n    at something (http://127.0.0.1:5000/static/test.js:5:11)\n    at http://127.0.0.1:5000/static/test.js:9:1"
+            }
+          },
+          "name": "rollbar-browser-js",
+          "version": "2.11.0"
+        },
+        "platform": "browser",
+        "request": {
+          "query_string": "",
+          "url": "http://127.0.0.1:5000/js",
+          "user_ip": "76.102.149.52"
+        },
+        "server": {},
+        "timestamp": 1569790882,
+        "uuid": "271f5ed4-3cbe-4d3a-d4d6-b37a550c7b45"
+      },
+      "last_occurrence_id": 98611890129,
+      "last_occurrence_timestamp": 1569790882,
+      "level": 40,
+      "level_lock": 0,
+      "platform": 1,
+      "project_id": 224316,
+      "public_item_id": null,
+      "resolved_in_version": null,
+      "status": 1,
+      "title": "Uncaught TypeError: Assignment to constant variable.",
+      "title_lock": 0,
+      "total_occurrences": 1,
+      "unique_occurrences": 1
+    },
+    "url": "https://rollbar.com/organization/project/items/12344/"
+  },
+  "event_name": "reactivated_item"
+}

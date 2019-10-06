@@ -1,0 +1,218 @@
+{
+  "data": {
+    "item": {
+      "activating_occurrence_id": 97792411690,
+      "assigned_user_id": null,
+      "counter": 21,
+      "environment": "live",
+      "first_occurrence_id": 97642881390,
+      "first_occurrence_timestamp": 1569206480,
+      "framework": 16,
+      "group_item_id": null,
+      "group_status": 1,
+      "hash": "cb618fdbe26e875de9e6e5fbe1f505505bace158",
+      "id": 782446217,
+      "integrations_data": {},
+      "last_activated_timestamp": 1569305341,
+      "last_modified_by": 8247,
+      "last_occurrence": {
+        "body": {
+          "trace_chain": [
+            {
+              "exception": {
+                "class": "Exception",
+                "message": "foo"
+              },
+              "frames": [
+                {
+                  "code": "response = self.full_dispatch_request()",
+                  "filename": "/opt/virtualenv/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+                  "lineno": 1817,
+                  "method": "wsgi_app"
+                },
+                {
+                  "code": "rv = self.handle_user_exception(e)",
+                  "filename": "/opt/virtualenv/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+                  "lineno": 1477,
+                  "method": "full_dispatch_request"
+                },
+                {
+                  "code": "reraise(exc_type, exc_value, tb)",
+                  "filename": "/opt/virtualenv/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+                  "lineno": 1381,
+                  "method": "handle_user_exception"
+                },
+                {
+                  "code": "rv = self.dispatch_request()",
+                  "filename": "/opt/virtualenv/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+                  "lineno": 1475,
+                  "method": "full_dispatch_request"
+                },
+                {
+                  "code": "return self.view_functions[rule.endpoint](**req.view_args)",
+                  "filename": "/opt/virtualenv/rollbar-flask-example/lib/python2.7/site-packages/flask/app.py",
+                  "lineno": 1461,
+                  "method": "dispatch_request"
+                },
+                {
+                  "code": "return api.create_card({\"card_number\": \"12345\"})",
+                  "filename": "hello.py",
+                  "lineno": 105,
+                  "method": "nested"
+                },
+                {
+                  "argspec": [
+                    "data"
+                  ],
+                  "code": "raise_ex(card_number)",
+                  "filename": "/opt/code/rollbar-flask-example/nested/api.py",
+                  "lineno": 37,
+                  "locals": {
+                    "card_number": "12345",
+                    "data": {
+                      "card_number": "12345"
+                    }
+                  },
+                  "method": "create_card"
+                },
+                {
+                  "argspec": [
+                    "card_number"
+                  ],
+                  "code": "raise e",
+                  "filename": "/opt/code/rollbar-flask-example/nested/api.py",
+                  "lineno": 31,
+                  "locals": {
+                    "card_number": "12345",
+                    "custom": "<class 'nested.api.CustomException'>",
+                    "e": "<type 'exceptions.Exception'>",
+                    "exc_info": [
+                      "<type 'type'>",
+                      "<class 'nested.api.CustomException'>",
+                      "<type 'traceback'>"
+                    ],
+                    "random_local": "random local foo"
+                  },
+                  "method": "raise_ex"
+                }
+              ]
+            },
+            {
+              "exception": {
+                "class": "CustomException",
+                "message": "bar"
+              },
+              "frames": [
+                {
+                  "argspec": [
+                    "card_number"
+                  ],
+                  "code": "raise_custom_exception()",
+                  "filename": "/opt/code/rollbar-flask-example/nested/api.py",
+                  "lineno": 19,
+                  "locals": {
+                    "card_number": "12345",
+                    "custom": "<class 'nested.api.CustomException'>",
+                    "e": "<type 'exceptions.Exception'>",
+                    "exc_info": [
+                      "<type 'type'>",
+                      "<class 'nested.api.CustomException'>",
+                      "<type 'traceback'>"
+                    ],
+                    "random_local": "random local foo"
+                  },
+                  "method": "raise_ex"
+                },
+                {
+                  "code": "raise CustomException(bar_local)",
+                  "filename": "/opt/code/rollbar-flask-example/nested/api.py",
+                  "lineno": 14,
+                  "locals": {
+                    "bar_local": "bar"
+                  },
+                  "method": "raise_custom_exception"
+                }
+              ]
+            }
+          ]
+        },
+        "context": "/nested",
+        "environment": "live",
+        "framework": "flask",
+        "language": "python 2.7.14",
+        "level": "error",
+        "metadata": {
+          "access_token": "d5dcc96766534ee388acf9c1df490892",
+          "api_server_hostname": "api05",
+          "customer_timestamp": 1569305351,
+          "debug": {
+            "routes": {
+              "counters": {
+                "post_item": 4726208
+              },
+              "start_time": 1568080947043
+            }
+          },
+          "timestamp_ms": 1569305351282
+        },
+        "notifier": {
+          "name": "pyrollbar",
+          "version": "0.14.7"
+        },
+        "person": {
+          "email": "test@example.com",
+          "id": "1020",
+          "username": "danieliu"
+        },
+        "request": {
+          "GET": {},
+          "POST": {},
+          "files_keys": [],
+          "headers": {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-US,en;q=0.9,zh-TW;q=0.8,zh;q=0.7,ja-JP;q=0.6,ja;q=0.5",
+            "Cache-Control": "max-age=0",
+            "Connection": "keep-alive",
+            "Dnt": "1",
+            "Host": "127.0.0.1:5000",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36"
+          },
+          "method": "GET",
+          "url": "http://127.0.0.1:5000/nested",
+          "user_ip": "127.0.0.1"
+        },
+        "server": {
+          "argv": [
+            "hello.py"
+          ],
+          "host": "danieliu.local",
+          "pid": 21256,
+          "root": "/opt/code/rollbar-flask-example"
+        },
+        "timestamp": 1569305351,
+        "uuid": "c5fe0594-9d7f-41ae-9b59-b9e7258ffecd"
+      },
+      "last_occurrence_id": 97792426219,
+      "last_occurrence_timestamp": 1569305351,
+      "level": 40,
+      "level_lock": 0,
+      "platform": 0,
+      "project_id": 224316,
+      "public_item_id": null,
+      "resolved_in_version": null,
+      "status": 1,
+      "title": "Exception: foo",
+      "title_lock": 0,
+      "total_occurrences": 10,
+      "unique_occurrences": 1
+    },
+    "occurrences": 10,
+    "url": "https://rollbar.com/organization/project/items/12342/"
+  },
+  "event_name": "exp_repeat_item"
+}

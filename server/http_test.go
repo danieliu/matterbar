@@ -53,22 +53,22 @@ func TestServeHttp(t *testing.T) {
 	nonNotifyAttachment := []*model.SlackAttachment{
 		&model.SlackAttachment{
 			Color:     "#ff0000",
-			Fallback:  "[live] New Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+			Fallback:  "[live] New Error - TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
 			Fields:    attachmentFields,
 			Title:     "New Error",
 			TitleLink: itemLink,
-			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
 		},
 	}
 	withNotifyAttachment := []*model.SlackAttachment{
 		&model.SlackAttachment{
 			Color:     "#ff0000",
-			Fallback:  "[live] New Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+			Fallback:  "[live] New Error - TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
 			Fields:    attachmentFields,
 			Pretext:   "@daniel, @eric",
 			Title:     "New Error",
 			TitleLink: itemLink,
-			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
 		},
 	}
 	withOccurrenceNotifyAttachment := []*model.SlackAttachment{
@@ -340,7 +340,7 @@ func TestServeHttp(t *testing.T) {
 			},
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
-			Body:   loadJsonFile(t, "every_occurrence.json"),
+			Body:   loadJsonFile(t, "every_occurrence.json"), // TODO: consolidate occurrence.json
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",

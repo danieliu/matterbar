@@ -19,6 +19,26 @@ func TestEventNameToTitle(t *testing.T) {
 			TestFile:      "new_item.json",
 			ExpectedTitle: "New Error",
 		},
+		"ok - reactivated item": {
+			TestFile:      "reactivated_item.json",
+			ExpectedTitle: "Reactivated Error",
+		},
+		"ok - exp repeat item": {
+			TestFile:      "exp_repeat_item.json",
+			ExpectedTitle: "10th Error",
+		},
+		"ok - reopened": {
+			TestFile:      "reopened_item.json",
+			ExpectedTitle: "Reopened Error",
+		},
+		"ok - resolved": {
+			TestFile:      "resolved_item.json",
+			ExpectedTitle: "Resolved Error",
+		},
+		"ok - occurrence": {
+			TestFile:      "occurrence.json",
+			ExpectedTitle: "Occurrence - Error",
+		},
 		"ok - high velocity": {
 			TestFile:      "item_velocity.json",
 			ExpectedTitle: "5 occurrences in 5 minutes",

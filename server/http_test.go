@@ -27,6 +27,7 @@ func loadJsonFile(t *testing.T, name string) []byte {
 func TestServeHttp(t *testing.T) {
 	emptyBody := []byte("{}")
 	itemLink := "https://rollbar.com/item/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
+	itemURL := "https://rollbar.com/organization/project/items/%s/"
 	occurrenceLink := "https://rollbar.com/occurrence/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
 	attachmentFields := []*model.SlackAttachmentField{
 		&model.SlackAttachmentField{
@@ -91,6 +92,25 @@ func TestServeHttp(t *testing.T) {
 			Text:      "```\nException: foo\n```",
 		},
 	}
+	itemVelocityAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ffa500",
+			Fallback:  "5 occurrences in 5 minutes",
+			Title:     "5 occurrences in 5 minutes",
+			TitleLink: fmt.Sprintf(itemURL, "12343"),
+			Text:      "```\nNo details available. High occurrence rate rollbar events are minimally supported.\n```",
+		},
+	}
+	itemVelocityAttachmentWithNotify := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ffa500",
+			Fallback:  "5 occurrences in 5 minutes",
+			Pretext:   "@daniel, @eric",
+			Title:     "5 occurrences in 5 minutes",
+			TitleLink: fmt.Sprintf(itemURL, "12343"),
+			Text:      "```\nNo details available. High occurrence rate rollbar events are minimally supported.\n```",
+		},
+	}
 
 	nonNotifyOverridePost := &model.Post{
 		ChannelId: "existingChannelId",
@@ -140,6 +160,26 @@ func TestServeHttp(t *testing.T) {
 			"from_webhook":  "true",
 			"use_user_icon": "true",
 			"attachments":   expRepeatTraceChainAttachment,
+		},
+	}
+	itemVelocityPost := &model.Post{
+		ChannelId: "channelId",
+		UserId:    "userId",
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments":   itemVelocityAttachment,
+		},
+	}
+	itemVelocityPostWithNotify := &model.Post{
+		ChannelId: "channelId",
+		UserId:    "userId",
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments":   itemVelocityAttachmentWithNotify,
 		},
 	}
 
@@ -275,6 +315,24 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusInternalServerError,
 			ExpectedResponse: "server/http: error, detailed error\n",
 		},
+		"error - item_velocity failed to create post for whatever reason": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("LogError", mock.AnythingOfType("string")).Return(nil)
+				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(nil, &model.AppError{Where: "server/http", Message: "error", DetailedError: "detailed error"})
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "item_velocity.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusInternalServerError,
+			ExpectedResponse: "server/http: error, detailed error\n",
+		},
 		"ok - error in KVGet for notify users logged and ignored": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), &model.AppError{})
@@ -378,6 +436,42 @@ func TestServeHttp(t *testing.T) {
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "exp_repeat_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - item_velocity": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", itemVelocityPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "item_velocity.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - item_velocity with notify": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
+				api.On("CreatePost", itemVelocityPostWithNotify).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "item_velocity.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",

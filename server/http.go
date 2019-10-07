@@ -107,7 +107,59 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usersToNotify, err := p.API.KVGet(channelId)
+	if err != nil {
+		p.API.LogWarn(fmt.Sprintf("Error fetching users to notify in channel %s", channelId))
+	}
+	usersMap := make(map[string]bool)
+	if len(usersToNotify) > 0 {
+		if err := json.Unmarshal(usersToNotify, &usersMap); err != nil {
+			p.API.LogWarn(fmt.Sprintf("Error parsing users to notify: %s", err.Error()))
+		}
+	}
+	pretext := GetUsernameList(usersMap)
 	title := rollbar.eventNameToTitle()
+
+	switch rollbar.EventName {
+	case "item_velocity":
+		// handle specifically because rollbar doesn't include occurrence data
+		text := "No details available. High occurrence rate rollbar events are minimally supported."
+		attachment := &model.SlackAttachment{
+			Color:     EventToColor[rollbar.EventName],
+			Fallback:  title,
+			Title:     title,
+			TitleLink: rollbar.Data.URL,
+			Text:      fmt.Sprintf("```\n%s\n```", text),
+		}
+
+		if pretext != "None" {
+			attachment.Pretext = pretext
+		}
+
+		post := &model.Post{
+			ChannelId: channelId,
+			UserId:    configuration.userId,
+			Type:      model.POST_SLACK_ATTACHMENT,
+			Props: map[string]interface{}{
+				"from_webhook":  "true",
+				"use_user_icon": "true",
+				"attachments":   []*model.SlackAttachment{attachment},
+			},
+		}
+
+		if _, err := p.API.CreatePost(post); err != nil {
+			p.API.LogError(fmt.Sprintf("Error creating a post: %s", err.Error()))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	case "deploy":
+		// TODO
+		return
+	case "test":
+		// TODO
+		return
+	}
+
 	lastOccurrence := rollbar.Data.Item.LastOccurrence
 	// event type `occurrence` has data under `occurrence` instead of `last_occurrence`
 	if lastOccurrence == nil {
@@ -153,18 +205,6 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			Value: fmt.Sprintf("[Item](%s) | [Occurrence](%s)", itemLink, occurrenceLink),
 		},
 	}
-
-	usersToNotify, err := p.API.KVGet(channelId)
-	if err != nil {
-		p.API.LogWarn(fmt.Sprintf("Error fetching users to notify in channel %s", channelId))
-	}
-	usersMap := make(map[string]bool)
-	if len(usersToNotify) > 0 {
-		if err := json.Unmarshal(usersToNotify, &usersMap); err != nil {
-			p.API.LogWarn(fmt.Sprintf("Error parsing users to notify: %s", err.Error()))
-		}
-	}
-	pretext := GetUsernameList(usersMap)
 
 	attachment := &model.SlackAttachment{
 		Color:     EventToColor[rollbar.EventName],

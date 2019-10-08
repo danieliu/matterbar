@@ -182,6 +182,15 @@ func TestServeHttp(t *testing.T) {
 			"attachments":   itemVelocityAttachmentWithNotify,
 		},
 	}
+	testPost := &model.Post{
+		ChannelId: "channelId",
+		UserId:    "userId",
+		Message:   "This is a test payload from Rollbar. If you got this, it works!",
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+		},
+	}
 
 	for name, test := range map[string]struct {
 		SetupAPI         func(api *plugintest.API) *plugintest.API
@@ -333,6 +342,24 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusInternalServerError,
 			ExpectedResponse: "server/http: error, detailed error\n",
 		},
+		"error - test webhook failed to create post for whatever reason": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("LogError", mock.AnythingOfType("string")).Return(nil)
+				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(nil, &model.AppError{Where: "server/http", Message: "error", DetailedError: "detailed error"})
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "test.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusInternalServerError,
+			ExpectedResponse: "server/http: error, detailed error\n",
+		},
 		"ok - error in KVGet for notify users logged and ignored": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), &model.AppError{})
@@ -472,6 +499,24 @@ func TestServeHttp(t *testing.T) {
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "item_velocity.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - test webhook": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
+				api.On("CreatePost", testPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "test.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",

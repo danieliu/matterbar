@@ -156,7 +156,19 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		// TODO
 		return
 	case "test":
-		// TODO
+		post := &model.Post{
+			ChannelId: channelId,
+			UserId:    configuration.userId,
+			Message:   rollbar.Data.Message,
+			Props: map[string]interface{}{
+				"from_webhook":  "true",
+				"use_user_icon": "true",
+			},
+		}
+		if _, err := p.API.CreatePost(post); err != nil {
+			p.API.LogError(fmt.Sprintf("Error creating a post: %s", err.Error()))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

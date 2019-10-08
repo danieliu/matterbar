@@ -1,0 +1,6 @@
+{
+  "data": {
+    "message": "This is a test payload from Rollbar. If you got this, it works!"
+  },
+  "event_name": "test"
+}

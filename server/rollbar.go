@@ -100,6 +100,7 @@ type Rollbar struct {
 			TotalOccurrences         int             `json:"total_occurrences"`
 			UniqueOccurrences        *int            `json:"unique_occurrences"`
 		} `json:"item"`
+		Message     string          `json:"message"`
 		Occurrence  *LastOccurrence `json:"occurrence"`
 		Occurrences int             `json:"occurrences"`
 		Trigger     struct {
@@ -116,6 +117,8 @@ func (rollbar *Rollbar) eventNameToTitle() string {
 	title := ""
 
 	switch rollbar.EventName {
+	case "test":
+		return ""
 	case "new_item":
 		prefix = "New"
 	case "occurrence":

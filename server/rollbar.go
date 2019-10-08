@@ -3,6 +3,11 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
+)
+
+const (
+	timeLayout = "2006-01-02 03:04 pm"
 )
 
 type Trace struct {
@@ -69,10 +74,23 @@ type LastOccurrence struct {
 	Uuid      string `json:"uuid"`
 }
 
+type Deploy struct {
+	Comment       *string `json:"comment"`
+	Environment   string  `json:"environment"`
+	FinishTime    int64   `json:"finish_time"`
+	ID            int     `json:"id"`
+	LocalUsername *string `json:"local_username"`
+	ProjectID     int     `json:"project_id"`
+	Revision      string  `json:"revision"`
+	StartTime     int64   `json:"start_time"`
+	UserID        *int    `json:"user_id"`
+}
+
 type Rollbar struct {
 	EventName string `json:"event_name"`
 	Data      struct {
-		Item struct {
+		Deploy Deploy `json:"deploy"`
+		Item   struct {
 			ActivatingOccurrenceId   int             `json:"activating_occurrence_id"`
 			AssignedUserId           *int            `json:"assigned_user_id"`
 			Counter                  int             `json:"counter"`
@@ -119,6 +137,8 @@ func (rollbar *Rollbar) eventNameToTitle() string {
 	switch rollbar.EventName {
 	case "test":
 		return ""
+	case "deploy":
+		return "Deploy"
 	case "new_item":
 		prefix = "New"
 	case "occurrence":
@@ -182,4 +202,20 @@ func (rollbar *Rollbar) eventText() string {
 	// TODO: Option 4: crash_report; iOS crash report
 
 	return eventMessage
+}
+
+func (rollbar *Rollbar) deployUser() string {
+	data := rollbar.Data.Deploy
+	username := "unknown user"
+	if data.LocalUsername != nil {
+		username = *data.LocalUsername
+	}
+
+	return username
+}
+
+func (rollbar *Rollbar) deployDateTime() string {
+	data := rollbar.Data.Deploy
+	finishTime := time.Unix(data.FinishTime, 0)
+	return finishTime.Format(timeLayout)
 }

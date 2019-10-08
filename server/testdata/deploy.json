@@ -1,0 +1,16 @@
+{
+  "data": {
+    "deploy": {
+      "comment": "initial test",
+      "environment": "live",
+      "finish_time": 1571600758,
+      "id": 13752228,
+      "local_username": "dliu",
+      "project_id": 224316,
+      "revision": "780097be05cccf3e30ef3f90ad0c4cf9a085be22",
+      "start_time": 1571599558,
+      "user_id": 142069
+    }
+  },
+  "event_name": "deploy"
+}

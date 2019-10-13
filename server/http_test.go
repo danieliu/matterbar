@@ -26,8 +26,9 @@ func loadJsonFile(t *testing.T, name string) []byte {
 
 func TestServeHttp(t *testing.T) {
 	emptyBody := []byte("{}")
-	itemLink := "https://rollbar.com/item/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
 	itemURL := "https://rollbar.com/organization/project/items/%s/"
+	deployLink := "https://rollbar.com/deploy/%d/"
+	itemLink := "https://rollbar.com/item/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
 	occurrenceLink := "https://rollbar.com/occurrence/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
 	attachmentFields := []*model.SlackAttachmentField{
 		&model.SlackAttachmentField{
@@ -111,6 +112,16 @@ func TestServeHttp(t *testing.T) {
 			Text:      "```\nNo details available. High occurrence rate rollbar events are minimally supported.\n```",
 		},
 	}
+	deployAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#4bc6b9",
+			Fallback:  "[Deploy] live - `2019-10-20 12:45:58 PDT-0700` **dliu** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
+			Pretext:   "@daniel, @eric",
+			Title:     "Deploy",
+			TitleLink: fmt.Sprintf(deployLink, 13752228),
+			Text:      "`2019-10-20 12:45:58 PDT-0700` **dliu** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
+		},
+	}
 
 	nonNotifyOverridePost := &model.Post{
 		ChannelId: "existingChannelId",
@@ -189,6 +200,16 @@ func TestServeHttp(t *testing.T) {
 		Props: map[string]interface{}{
 			"from_webhook":  "true",
 			"use_user_icon": "true",
+		},
+	}
+	deployPost := &model.Post{
+		ChannelId: "channelId",
+		UserId:    "userId",
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments":   deployAttachment,
 		},
 	}
 
@@ -360,6 +381,24 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusInternalServerError,
 			ExpectedResponse: "server/http: error, detailed error\n",
 		},
+		"error - deploy failed to create post for whatever reason": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("LogError", mock.AnythingOfType("string")).Return(nil)
+				api.On("CreatePost", mock.AnythingOfType("*model.Post")).Return(nil, &model.AppError{Where: "server/http", Message: "error", DetailedError: "detailed error"})
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "deploy.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusInternalServerError,
+			ExpectedResponse: "server/http: error, detailed error\n",
+		},
 		"ok - error in KVGet for notify users logged and ignored": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), &model.AppError{})
@@ -517,6 +556,24 @@ func TestServeHttp(t *testing.T) {
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "test.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - deploy webhook": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
+				api.On("CreatePost", deployPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "deploy.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",

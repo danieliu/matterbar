@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	timeLayout = "2006-01-02 03:04 pm"
+	timeLayout = "2006-01-02 15:04:05 MST-0700"
 )
 
 type Trace struct {

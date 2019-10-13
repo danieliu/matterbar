@@ -23,6 +23,7 @@ var EventToColor = map[string]string{
 	"item_velocity":    "#ffa500", // orange
 	"reopened_item":    "#add8e6", // light blue
 	"resolved_item":    "#00ff00", // green
+	"deploy":           "#4bc6b9", // green-ish
 }
 
 func (p *RollbarPlugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
@@ -120,6 +121,7 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	pretext := GetUsernameList(usersMap)
 	title := rollbar.eventNameToTitle()
 
+	// non-standard webhook events, i.e. different available data
 	switch rollbar.EventName {
 	case "item_velocity":
 		// handle specifically because rollbar doesn't include occurrence data
@@ -153,7 +155,42 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	case "deploy":
-		// TODO
+		environment := rollbar.Data.Deploy.Environment
+		text := fmt.Sprintf(
+			"`%s` **%s** deployed `%s` revision `%s`",
+			rollbar.deployDateTime(),
+			rollbar.deployUser(),
+			environment,
+			rollbar.Data.Deploy.Revision,
+		)
+		fallback := fmt.Sprintf("[%s] %s - %s", title, environment, text)
+		attachment := &model.SlackAttachment{
+			Color:     EventToColor[rollbar.EventName],
+			Fallback:  fallback,
+			Title:     title,
+			TitleLink: fmt.Sprintf("https://rollbar.com/deploy/%d/", rollbar.Data.Deploy.ID),
+			Text:      text,
+		}
+
+		if pretext != "None" {
+			attachment.Pretext = pretext
+		}
+
+		post := &model.Post{
+			ChannelId: channelId,
+			UserId:    configuration.userId,
+			Type:      model.POST_SLACK_ATTACHMENT,
+			Props: map[string]interface{}{
+				"from_webhook":  "true",
+				"use_user_icon": "true",
+				"attachments":   []*model.SlackAttachment{attachment},
+			},
+		}
+
+		if _, err := p.API.CreatePost(post); err != nil {
+			p.API.LogError(fmt.Sprintf("Error creating a post: %s", err.Error()))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 		return
 	case "test":
 		post := &model.Post{
@@ -172,6 +209,7 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// standard webhook events
 	lastOccurrence := rollbar.Data.Item.LastOccurrence
 	// event type `occurrence` has data under `occurrence` instead of `last_occurrence`
 	if lastOccurrence == nil {

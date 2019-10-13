@@ -136,7 +136,7 @@ func TestDeployDateTime(t *testing.T) {
 	}{
 		"deploy": {
 			TestFile:         "deploy.json",
-			ExpectedDateTime: "2019-10-20 12:45 pm",
+			ExpectedDateTime: "2019-10-20 12:45:58 PDT-0700",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

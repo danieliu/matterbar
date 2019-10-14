@@ -220,10 +220,10 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	language := lastOccurrence.Language
 	itemLink := fmt.Sprintf(
 		"https://rollbar.com/item/uuid/?uuid=%s",
-		lastOccurrence.Uuid)
+		lastOccurrence.UUID)
 	occurrenceLink := fmt.Sprintf(
 		"https://rollbar.com/occurrence/uuid/?uuid=%s",
-		lastOccurrence.Uuid)
+		lastOccurrence.UUID)
 
 	eventText := rollbar.eventText()
 	if eventText == "" {

@@ -1,0 +1,66 @@
+{
+  "data": {
+    "item": {
+      "activating_occurrence_id": 62112706157,
+      "assigned_user_id": null,
+      "counter": 12,
+      "environment": "live",
+      "first_occurrence_id": 62112706157,
+      "first_occurrence_timestamp": 1545202898,
+      "framework": 19,
+      "group_item_id": null,
+      "group_status": 1,
+      "hash": "a6d7b49162e7ed59fa3a44f20ed911f6359707cd",
+      "id": 603650150,
+      "integrations_data": {},
+      "last_activated_timestamp": 1545202898,
+      "last_modified_by": 2147,
+      "last_occurrence": {
+        "body": {
+          "message": {
+            "body": "This is an error message"
+          }
+        },
+        "code_version": "1.0.1",
+        "environment": "live",
+        "framework": "unknown",
+        "language": "java",
+        "level": "error",
+        "metadata": {
+          "access_token": "d5dcc96766534ee388acf9c1df490892",
+          "api_server_hostname": "api05",
+          "customer_timestamp": 1545202894.312,
+          "debug": {
+            "routes": {
+              "counters": {
+                "post_item": 2162934
+              },
+              "start_time": 1544813018261
+            }
+          },
+          "timestamp_ms": 1545202898456
+        },
+        "notifier": {
+          "name": "rollbar-java",
+          "version": "1.3.1"
+        },
+        "timestamp": 1545202898,
+        "uuid": "335e1144242f402ba6ed6f34065bbefd"
+      },
+      "last_occurrence_id": 62112706157,
+      "last_occurrence_timestamp": 1545202898,
+      "level": 40,
+      "level_lock": 0,
+      "platform": 0,
+      "project_id": 224316,
+      "public_item_id": null,
+      "resolved_in_version": null,
+      "status": 1,
+      "title": "This is an error message",
+      "title_lock": 0,
+      "total_occurrences": 1,
+      "unique_occurrences": null
+    }
+  },
+  "event_name": "new_item"
+}

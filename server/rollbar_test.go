@@ -5,6 +5,31 @@ import (
 	"testing"
 )
 
+func TestRollbarCustomerTimestamp(t *testing.T) {
+	for name, test := range map[string]struct {
+		TestFile                  string
+		ExpectedCustomerTimestamp string
+	}{
+		"ok - customer timestamp int": {
+			TestFile:                  "new_item.json",
+			ExpectedCustomerTimestamp: "1541827726",
+		},
+		"ok - java customer timestamp decimal": {
+			TestFile:                  "new_item_java.json",
+			ExpectedCustomerTimestamp: "1545202894.312",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var rollbar Rollbar
+			data := loadJsonFile(t, test.TestFile)
+			err := json.Unmarshal([]byte(data), &rollbar)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestEventNameToTitle(t *testing.T) {
 	for name, test := range map[string]struct {
 		TestFile      string
@@ -60,7 +85,6 @@ func TestEventNameToTitle(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestEventText(t *testing.T) {

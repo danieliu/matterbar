@@ -24,13 +24,24 @@ func loadJsonFile(t *testing.T, name string) []byte {
 	return bytes
 }
 
-func TestServeHttp(t *testing.T) {
-	emptyBody := []byte("{}")
-	itemURL := "https://rollbar.com/organization/project/items/%s/"
-	deployLink := "https://rollbar.com/deploy/%d/"
-	itemLink := "https://rollbar.com/item/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
-	occurrenceLink := "https://rollbar.com/occurrence/uuid/?uuid=2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
-	attachmentFields := []*model.SlackAttachmentField{
+func generatePost(channel string, user string, attachments []*model.SlackAttachment) *model.Post {
+	return &model.Post{
+		ChannelId: channel,
+		UserId:    user,
+		Type:      model.POST_SLACK_ATTACHMENT,
+		Props: map[string]interface{}{
+			"from_webhook":  "true",
+			"use_user_icon": "true",
+			"attachments":   attachments,
+		},
+	}
+}
+
+func generateAttachmentFields(uuid string) []*model.SlackAttachmentField {
+	itemLink := fmt.Sprintf("https://rollbar.com/item/uuid/?uuid=%s", uuid)
+	occurrenceLink := fmt.Sprintf("https://rollbar.com/occurrence/uuid/?uuid=%s", uuid)
+
+	return []*model.SlackAttachmentField{
 		&model.SlackAttachmentField{
 			Short: true,
 			Title: "Environment",
@@ -52,44 +63,32 @@ func TestServeHttp(t *testing.T) {
 			Value: fmt.Sprintf("[Item](%s) | [Occurrence](%s)", itemLink, occurrenceLink),
 		},
 	}
-	nonNotifyAttachment := []*model.SlackAttachment{
+}
+
+func TestServeHttp(t *testing.T) {
+	emptyBody := []byte("{}")
+	itemURL := "https://rollbar.com/organization/project/items/%s/"
+	newItemUUID := "2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
+	deployLink := "https://rollbar.com/deploy/%d/"
+	itemLink := "https://rollbar.com/item/uuid/?uuid=%s"
+
+	deployAttachment := []*model.SlackAttachment{
 		&model.SlackAttachment{
-			Color:     "#ff0000",
-			Fallback:  "[live] New Error - TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
-			Fields:    attachmentFields,
-			Title:     "New Error",
-			TitleLink: itemLink,
-			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
-		},
-	}
-	withNotifyAttachment := []*model.SlackAttachment{
-		&model.SlackAttachment{
-			Color:     "#ff0000",
-			Fallback:  "[live] New Error - TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
-			Fields:    attachmentFields,
+			Color:     "#4bc6b9",
+			Fallback:  "[Deploy] live - `2019-10-20 12:45:58 PDT-0700` **dliu** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
 			Pretext:   "@daniel, @eric",
-			Title:     "New Error",
-			TitleLink: itemLink,
-			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
-		},
-	}
-	occurrenceAttachment := []*model.SlackAttachment{
-		&model.SlackAttachment{
-			Color:     "#ff0000",
-			Fallback:  "[live] Occurrence - Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
-			Fields:    attachmentFields,
-			Title:     "Occurrence - Error",
-			TitleLink: itemLink,
-			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+			Title:     "Deploy",
+			TitleLink: fmt.Sprintf(deployLink, 13752228),
+			Text:      "`2019-10-20 12:45:58 PDT-0700` **dliu** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
 		},
 	}
 	expRepeatTraceChainAttachment := []*model.SlackAttachment{
 		&model.SlackAttachment{
 			Color:     "#800080",
 			Fallback:  "[live] 10th Error - Exception: foo",
-			Fields:    attachmentFields,
+			Fields:    generateAttachmentFields(newItemUUID),
 			Title:     "10th Error",
-			TitleLink: itemLink,
+			TitleLink: fmt.Sprintf(itemLink, newItemUUID),
 			Text:      "```\nException: foo\n```",
 		},
 	}
@@ -112,87 +111,59 @@ func TestServeHttp(t *testing.T) {
 			Text:      "```\nNo details available. High occurrence rate rollbar events are minimally supported.\n```",
 		},
 	}
-	deployAttachment := []*model.SlackAttachment{
+	newItemAttachment := []*model.SlackAttachment{
 		&model.SlackAttachment{
-			Color:     "#4bc6b9",
-			Fallback:  "[Deploy] live - `2019-10-20 12:45:58 PDT-0700` **dliu** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
+			Color:     "#ff0000",
+			Fallback:  "[live] New Error - TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
+			Fields:    generateAttachmentFields(newItemUUID),
+			Title:     "New Error",
+			TitleLink: fmt.Sprintf(itemLink, newItemUUID),
+			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
+		},
+	}
+	newItemAttachmentWithNotify := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ff0000",
+			Fallback:  "[live] New Error - TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
+			Fields:    generateAttachmentFields(newItemUUID),
 			Pretext:   "@daniel, @eric",
-			Title:     "Deploy",
-			TitleLink: fmt.Sprintf(deployLink, 13752228),
-			Text:      "`2019-10-20 12:45:58 PDT-0700` **dliu** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
+			Title:     "New Error",
+			TitleLink: fmt.Sprintf(itemLink, newItemUUID),
+			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
+		},
+	}
+	newItemLogMessageAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ff0000",
+			Fallback:  "[live] New Error - User 8563892 is missing permissions",
+			Fields:    generateAttachmentFields("6fd2252b-3acd-4390-b722-466f5cbbd737"),
+			Title:     "New Error",
+			TitleLink: fmt.Sprintf(itemLink, "6fd2252b-3acd-4390-b722-466f5cbbd737"),
+			Text:      "```\nUser 8563892 is missing permissions\n```",
+		},
+	}
+	occurrenceAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ff0000",
+			Fallback:  "[live] Occurrence - Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+			Fields:    generateAttachmentFields(newItemUUID),
+			Title:     "Occurrence - Error",
+			TitleLink: fmt.Sprintf(itemLink, newItemUUID),
+			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
 		},
 	}
 
-	nonNotifyOverridePost := &model.Post{
-		ChannelId: "existingChannelId",
-		UserId:    "userId",
-		Type:      model.POST_SLACK_ATTACHMENT,
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   nonNotifyAttachment,
-		},
-	}
-	nonNotifyPost := &model.Post{
-		ChannelId: "channelId",
-		UserId:    "userId",
-		Type:      model.POST_SLACK_ATTACHMENT,
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   nonNotifyAttachment,
-		},
-	}
-	withNotifyPost := &model.Post{
-		ChannelId: "channelId",
-		UserId:    "userId",
-		Type:      model.POST_SLACK_ATTACHMENT,
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   withNotifyAttachment,
-		},
-	}
-	occurrencePost := &model.Post{
-		ChannelId: "channelId",
-		UserId:    "userId",
-		Type:      model.POST_SLACK_ATTACHMENT,
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   occurrenceAttachment,
-		},
-	}
-	expRepeatTraceChainPost := &model.Post{
-		ChannelId: "channelId",
-		UserId:    "userId",
-		Type:      model.POST_SLACK_ATTACHMENT,
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   expRepeatTraceChainAttachment,
-		},
-	}
-	itemVelocityPost := &model.Post{
-		ChannelId: "channelId",
-		UserId:    "userId",
-		Type:      model.POST_SLACK_ATTACHMENT,
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   itemVelocityAttachment,
-		},
-	}
-	itemVelocityPostWithNotify := &model.Post{
-		ChannelId: "channelId",
-		UserId:    "userId",
-		Type:      model.POST_SLACK_ATTACHMENT,
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   itemVelocityAttachmentWithNotify,
-		},
-	}
+	newItemPostWithChannelOverride := generatePost("existingChannelId", "userId", newItemAttachment)
+	newItemPost := generatePost("channelId", "userId", newItemAttachment)
+	newItemPostWithNotify := generatePost("channelId", "userId", newItemAttachmentWithNotify)
+
+	deployPost := generatePost("channelId", "userId", deployAttachment)
+	expRepeatTraceChainPost := generatePost("channelId", "userId", expRepeatTraceChainAttachment)
+	itemVelocityPost := generatePost("channelId", "userId", itemVelocityAttachment)
+	itemVelocityPostWithNotify := generatePost("channelId", "userId", itemVelocityAttachmentWithNotify)
+	newItemLogMessagePost := generatePost("channelId", "userId", newItemLogMessageAttachment)
+	occurrencePost := generatePost("channelId", "userId", occurrenceAttachment)
+
 	testPost := &model.Post{
 		ChannelId: "channelId",
 		UserId:    "userId",
@@ -200,16 +171,6 @@ func TestServeHttp(t *testing.T) {
 		Props: map[string]interface{}{
 			"from_webhook":  "true",
 			"use_user_icon": "true",
-		},
-	}
-	deployPost := &model.Post{
-		ChannelId: "channelId",
-		UserId:    "userId",
-		Type:      model.POST_SLACK_ATTACHMENT,
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   deployAttachment,
 		},
 	}
 
@@ -222,7 +183,7 @@ func TestServeHttp(t *testing.T) {
 		ExpectedStatus   int
 		ExpectedResponse string
 	}{
-		"error - non-notify defaults to 404": {
+		"error - 404 not found for non `/notify` path non-notify": {
 			SetupAPI:         func(api *plugintest.API) *plugintest.API { return api },
 			Method:           "GET",
 			Url:              "/",
@@ -231,7 +192,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusNotFound,
 			ExpectedResponse: "404 page not found\n",
 		},
-		"error - non-post method not allowed": {
+		"error - 405 method not allowed for non-POST": {
 			SetupAPI:         func(api *plugintest.API) *plugintest.API { return api },
 			Method:           "GET",
 			Url:              "/notify",
@@ -240,7 +201,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusMethodNotAllowed,
 			ExpectedResponse: "Method not allowed.\n",
 		},
-		"error - unauthenticated request": {
+		"error - 401 unauthorized (unauthenticated) for no secret in request query params": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("LogWarn", mock.Anything).Return(nil)
 				return api
@@ -252,7 +213,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusUnauthorized,
 			ExpectedResponse: "Unauthenticated.\n",
 		},
-		"error - no configured team, no team in query params": {
+		"error - 400 bad request for no configured team and no team in query params": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("LogWarn", mock.Anything).Return(nil)
 				return api
@@ -264,7 +225,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedResponse: "Missing 'team' query parameter.\n",
 		},
-		"error - no configured channel, no channel in query params": {
+		"error - 400 bad request for no configured channel and no channel in query params": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("LogWarn", mock.Anything).Return(nil)
 				return api
@@ -279,7 +240,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedResponse: "Missing 'channel' query parameter.\n",
 		},
-		"error - no configured team, api.get query team not found": {
+		"error - 400 bad request for no configured team and `api.get(query.team)` not found": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("LogWarn", mock.Anything).Return(nil)
 				api.On("GetTeamByName", "nonexistentQueryTeam").Return(nil, nil)
@@ -295,7 +256,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedResponse: "Team 'nonexistentQueryTeam' does not exist.\n",
 		},
-		"error - no configured channel, api.get query channel not found": {
+		"error - 400 bad request for no configured channel and `api.get(query.channel)` not found": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("LogWarn", mock.Anything).Return(nil)
 				api.On("GetChannelByName", "teamId", "nonexistentQueryChannel", false).Return(nil, nil)
@@ -311,7 +272,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedResponse: "Channel 'nonexistentQueryChannel' does not exist.\n",
 		},
-		"error - good configs, request body json decode to rollbar err": {
+		"error - 400 bad request for config ok but request body json decode to rollbar err": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("LogError", mock.Anything).Return(nil)
 				return api
@@ -327,7 +288,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedResponse: "EOF\n",
 		},
-		"error - failed to create post for whatever reason": {
+		"error - 500 internal server error when failed to create post for whatever reason (event: new_item)": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)
 				api.On("LogError", mock.AnythingOfType("string")).Return(nil)
@@ -345,7 +306,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusInternalServerError,
 			ExpectedResponse: "server/http: error, detailed error\n",
 		},
-		"error - item_velocity failed to create post for whatever reason": {
+		"error - 500 internal server error when failed to create post for whatever reason (event: item_velocity)": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)
 				api.On("LogError", mock.AnythingOfType("string")).Return(nil)
@@ -363,7 +324,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusInternalServerError,
 			ExpectedResponse: "server/http: error, detailed error\n",
 		},
-		"error - test webhook failed to create post for whatever reason": {
+		"error - 500 internal server error when failed to create post for whatever reason (event: test)": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)
 				api.On("LogError", mock.AnythingOfType("string")).Return(nil)
@@ -381,7 +342,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusInternalServerError,
 			ExpectedResponse: "server/http: error, detailed error\n",
 		},
-		"error - deploy failed to create post for whatever reason": {
+		"error - 500 internal server error when failed to create post for whatever reason (event: deploy)": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)
 				api.On("LogError", mock.AnythingOfType("string")).Return(nil)
@@ -399,11 +360,11 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusInternalServerError,
 			ExpectedResponse: "server/http: error, detailed error\n",
 		},
-		"ok - error in KVGet for notify users logged and ignored": {
+		"ok - error in KVGet for users to notify is logged and ignored": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), &model.AppError{})
 				api.On("LogWarn", mock.AnythingOfType("string")).Return(nil)
-				api.On("CreatePost", nonNotifyPost).Return(nil, nil)
+				api.On("CreatePost", newItemPost).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
@@ -418,11 +379,11 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusOK,
 			ExpectedResponse: "",
 		},
-		"ok - error in json unmarshal for notify users logged and ignored": {
+		"ok - error in json unmarshalling users to notify is logged and ignored": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(`{"this":error`), nil)
 				api.On("LogWarn", mock.AnythingOfType("string")).Return(nil)
-				api.On("CreatePost", nonNotifyPost).Return(nil, nil)
+				api.On("CreatePost", newItemPost).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
@@ -437,35 +398,16 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusOK,
 			ExpectedResponse: "",
 		},
-		"ok - query params team, channel present and exist": {
-			SetupAPI: func(api *plugintest.API) *plugintest.API {
-				api.On("KVGet", "existingChannelId").Return([]byte(""), nil)
-				api.On("GetTeamByName", "existingTeam").Return(&model.Team{Id: "existingTeamId"}, nil)
-				api.On("GetChannelByName", "existingTeamId", "existingChannel", false).Return(&model.Channel{Id: "existingChannelId"}, nil)
-				api.On("CreatePost", nonNotifyOverridePost).Return(nil, nil)
-				return api
-			},
-			Method: "POST",
-			Url:    "/notify?auth=abc123&team=existingTeam&channel=existingChannel",
-			Body:   loadJsonFile(t, "new_item.json"),
-			Configuration: &configuration{
-				Secret:    "abc123",
-				userId:    "userId",
-				teamId:    "teamId",
-				channelId: "channelId",
-			},
-			ExpectedStatus:   http.StatusOK,
-			ExpectedResponse: "",
-		},
-		"ok - notifies users in pretext": {
+		// test cases for all testdata json
+		"ok - deploy": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
-				api.On("CreatePost", withNotifyPost).Return(nil, nil)
+				api.On("CreatePost", deployPost).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
-			Body:   loadJsonFile(t, "new_item.json"),
+			Body:   loadJsonFile(t, "deploy.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",
@@ -475,25 +417,7 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusOK,
 			ExpectedResponse: "",
 		},
-		"ok - occurrence json": {
-			SetupAPI: func(api *plugintest.API) *plugintest.API {
-				api.On("KVGet", "channelId").Return([]byte(""), nil)
-				api.On("CreatePost", occurrencePost).Return(nil, nil)
-				return api
-			},
-			Method: "POST",
-			Url:    "/notify?auth=abc123",
-			Body:   loadJsonFile(t, "occurrence.json"),
-			Configuration: &configuration{
-				Secret:    "abc123",
-				userId:    "userId",
-				teamId:    "teamId",
-				channelId: "channelId",
-			},
-			ExpectedStatus:   http.StatusOK,
-			ExpectedResponse: "",
-		},
-		"ok - exp_repeat_item json with trace_chain": {
+		"ok - exp_repeat_item with trace_chain": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)
 				api.On("CreatePost", expRepeatTraceChainPost).Return(nil, nil)
@@ -547,15 +471,17 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusOK,
 			ExpectedResponse: "",
 		},
-		"ok - test webhook": {
+		"ok - new_item with query params for team and channel all present/exist": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
-				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
-				api.On("CreatePost", testPost).Return(nil, nil)
+				api.On("KVGet", "existingChannelId").Return([]byte(""), nil)
+				api.On("GetTeamByName", "existingTeam").Return(&model.Team{Id: "existingTeamId"}, nil)
+				api.On("GetChannelByName", "existingTeamId", "existingChannel", false).Return(&model.Channel{Id: "existingChannelId"}, nil)
+				api.On("CreatePost", newItemPostWithChannelOverride).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
-			Body:   loadJsonFile(t, "test.json"),
+			Url:    "/notify?auth=abc123&team=existingTeam&channel=existingChannel",
+			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",
@@ -565,15 +491,69 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusOK,
 			ExpectedResponse: "",
 		},
-		"ok - deploy webhook": {
+		"ok - new_item with users to notify included in pretext": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
-				api.On("CreatePost", deployPost).Return(nil, nil)
+				api.On("CreatePost", newItemPostWithNotify).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
 			Url:    "/notify?auth=abc123",
-			Body:   loadJsonFile(t, "deploy.json"),
+			Body:   loadJsonFile(t, "new_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - new_item with log message body": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", newItemLogMessagePost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "new_item_log_message.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - occurrence json": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", occurrencePost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "occurrence.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - test webhook": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(`{"daniel":true,"eric":true}`), nil)
+				api.On("CreatePost", testPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			Url:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "test.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",

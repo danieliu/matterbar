@@ -37,7 +37,7 @@ func generatePost(channel string, user string, attachments []*model.SlackAttachm
 	}
 }
 
-func generateAttachmentFields(uuid string) []*model.SlackAttachmentField {
+func generateAttachmentFields(environment string, framework string, language string, uuid string) []*model.SlackAttachmentField {
 	itemLink := fmt.Sprintf("https://rollbar.com/item/uuid/?uuid=%s", uuid)
 	occurrenceLink := fmt.Sprintf("https://rollbar.com/occurrence/uuid/?uuid=%s", uuid)
 
@@ -45,17 +45,17 @@ func generateAttachmentFields(uuid string) []*model.SlackAttachmentField {
 		&model.SlackAttachmentField{
 			Short: true,
 			Title: "Environment",
-			Value: "live",
+			Value: environment,
 		},
 		&model.SlackAttachmentField{
 			Short: true,
 			Title: "Framework",
-			Value: "flask",
+			Value: framework,
 		},
 		&model.SlackAttachmentField{
 			Short: true,
 			Title: "Language",
-			Value: "python 2.7.14",
+			Value: language,
 		},
 		&model.SlackAttachmentField{
 			Short: true,
@@ -72,6 +72,10 @@ func TestServeHttp(t *testing.T) {
 	deployLink := "https://rollbar.com/deploy/%d/"
 	itemLink := "https://rollbar.com/item/uuid/?uuid=%s"
 
+	environment := "live"
+	framework := "flask"
+	language := "python 2.7.14"
+
 	deployAttachment := []*model.SlackAttachment{
 		&model.SlackAttachment{
 			Color:     "#4bc6b9",
@@ -82,11 +86,20 @@ func TestServeHttp(t *testing.T) {
 			Text:      "`2019-10-20 12:45:58 PDT-0700` **dliu** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
 		},
 	}
-	expRepeatTraceChainAttachment := []*model.SlackAttachment{
+	deployAttachmentWithNoUsername := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#4bc6b9",
+			Fallback:  "[Deploy] live - `2019-10-20 12:45:58 PDT-0700` **unknown user** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
+			Title:     "Deploy",
+			TitleLink: fmt.Sprintf(deployLink, 13835549),
+			Text:      "`2019-10-20 12:45:58 PDT-0700` **unknown user** deployed `live` revision `780097be05cccf3e30ef3f90ad0c4cf9a085be22`",
+		},
+	}
+	expRepeatAttachmentWithTraceChain := []*model.SlackAttachment{
 		&model.SlackAttachment{
 			Color:     "#800080",
 			Fallback:  "[live] 10th Error - Exception: foo",
-			Fields:    generateAttachmentFields(newItemUUID),
+			Fields:    generateAttachmentFields(environment, framework, language, newItemUUID),
 			Title:     "10th Error",
 			TitleLink: fmt.Sprintf(itemLink, newItemUUID),
 			Text:      "```\nException: foo\n```",
@@ -115,7 +128,7 @@ func TestServeHttp(t *testing.T) {
 		&model.SlackAttachment{
 			Color:     "#ff0000",
 			Fallback:  "[live] New Error - TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
-			Fields:    generateAttachmentFields(newItemUUID),
+			Fields:    generateAttachmentFields(environment, framework, language, newItemUUID),
 			Title:     "New Error",
 			TitleLink: fmt.Sprintf(itemLink, newItemUUID),
 			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
@@ -125,18 +138,28 @@ func TestServeHttp(t *testing.T) {
 		&model.SlackAttachment{
 			Color:     "#ff0000",
 			Fallback:  "[live] New Error - TypeError: unsupported operand type(s) for +=: 'int' and 'str'",
-			Fields:    generateAttachmentFields(newItemUUID),
+			Fields:    generateAttachmentFields(environment, framework, language, newItemUUID),
 			Pretext:   "@daniel, @eric",
 			Title:     "New Error",
 			TitleLink: fmt.Sprintf(itemLink, newItemUUID),
 			Text:      "```\nTypeError: unsupported operand type(s) for +=: 'int' and 'str'\n```",
 		},
 	}
-	newItemLogMessageAttachment := []*model.SlackAttachment{
+	newItemAttachmentFromJava := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ff0000",
+			Fallback:  "[live] New Error - This is an error message",
+			Fields:    generateAttachmentFields("live", "unknown", "java", "335e1144242f402ba6ed6f34065bbefd"),
+			Title:     "New Error",
+			TitleLink: fmt.Sprintf(itemLink, "335e1144242f402ba6ed6f34065bbefd"),
+			Text:      "```\nThis is an error message\n```",
+		},
+	}
+	newItemAttachmentWithLogMessage := []*model.SlackAttachment{
 		&model.SlackAttachment{
 			Color:     "#ff0000",
 			Fallback:  "[live] New Error - User 8563892 is missing permissions",
-			Fields:    generateAttachmentFields("6fd2252b-3acd-4390-b722-466f5cbbd737"),
+			Fields:    generateAttachmentFields(environment, framework, language, "6fd2252b-3acd-4390-b722-466f5cbbd737"),
 			Title:     "New Error",
 			TitleLink: fmt.Sprintf(itemLink, "6fd2252b-3acd-4390-b722-466f5cbbd737"),
 			Text:      "```\nUser 8563892 is missing permissions\n```",
@@ -146,23 +169,68 @@ func TestServeHttp(t *testing.T) {
 		&model.SlackAttachment{
 			Color:     "#ff0000",
 			Fallback:  "[live] Occurrence - Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
-			Fields:    generateAttachmentFields(newItemUUID),
+			Fields:    generateAttachmentFields(environment, framework, language, newItemUUID),
 			Title:     "Occurrence - Error",
 			TitleLink: fmt.Sprintf(itemLink, newItemUUID),
 			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
 		},
 	}
+	occurrenceAttachmentWithTraceChain := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ff0000",
+			Fallback:  "[live] Occurrence - Error - Exception: foo",
+			Fields:    generateAttachmentFields(environment, framework, language, "10aafec4-6dd8-40aa-9258-9635cfaf672c"),
+			Title:     "Occurrence - Error",
+			TitleLink: fmt.Sprintf(itemLink, "10aafec4-6dd8-40aa-9258-9635cfaf672c"),
+			Text:      "```\nException: foo\n```",
+		},
+	}
+	reactivatedAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ffff00",
+			Fallback:  "[js-sandbox] Reactivated Error - TypeError: Assignment to constant variable.",
+			Fields:    generateAttachmentFields("js-sandbox", "browser-js", "javascript", "271f5ed4-3cbe-4d3a-d4d6-b37a550c7b45"),
+			Title:     "Reactivated Error",
+			TitleLink: fmt.Sprintf(itemLink, "271f5ed4-3cbe-4d3a-d4d6-b37a550c7b45"),
+			Text:      "```\nTypeError: Assignment to constant variable.\n```",
+		},
+	}
+	reopenedAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#add8e6",
+			Fallback:  "[live] Reopened Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+			Fields:    generateAttachmentFields(environment, framework, language, "16812560-c102-49e7-8fbf-39713c0014b4"),
+			Title:     "Reopened Error",
+			TitleLink: fmt.Sprintf(itemLink, "16812560-c102-49e7-8fbf-39713c0014b4"),
+			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+		},
+	}
+	resolvedAttachment := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#00ff00",
+			Fallback:  "[live] Resolved Error - TypeError: 'NoneType' object has no attribute '__getitem__'",
+			Fields:    generateAttachmentFields(environment, framework, language, "16812560-c102-49e7-8fbf-39713c0014b4"),
+			Title:     "Resolved Error",
+			TitleLink: fmt.Sprintf(itemLink, "16812560-c102-49e7-8fbf-39713c0014b4"),
+			Text:      "```\nTypeError: 'NoneType' object has no attribute '__getitem__'\n```",
+		},
+	}
 
+	deployPost := generatePost("channelId", "userId", deployAttachment)
+	deployPostWithNoUsername := generatePost("channelId", "userId", deployAttachmentWithNoUsername)
+	expRepeatPostWithTraceChain := generatePost("channelId", "userId", expRepeatAttachmentWithTraceChain)
+	itemVelocityPost := generatePost("channelId", "userId", itemVelocityAttachment)
+	itemVelocityPostWithNotify := generatePost("channelId", "userId", itemVelocityAttachmentWithNotify)
 	newItemPostWithChannelOverride := generatePost("existingChannelId", "userId", newItemAttachment)
 	newItemPost := generatePost("channelId", "userId", newItemAttachment)
 	newItemPostWithNotify := generatePost("channelId", "userId", newItemAttachmentWithNotify)
-
-	deployPost := generatePost("channelId", "userId", deployAttachment)
-	expRepeatTraceChainPost := generatePost("channelId", "userId", expRepeatTraceChainAttachment)
-	itemVelocityPost := generatePost("channelId", "userId", itemVelocityAttachment)
-	itemVelocityPostWithNotify := generatePost("channelId", "userId", itemVelocityAttachmentWithNotify)
-	newItemLogMessagePost := generatePost("channelId", "userId", newItemLogMessageAttachment)
+	newItemPostFromJava := generatePost("channelId", "userId", newItemAttachmentFromJava)
+	newItemPostWithLogMessage := generatePost("channelId", "userId", newItemAttachmentWithLogMessage)
 	occurrencePost := generatePost("channelId", "userId", occurrenceAttachment)
+	occurrencePostWithTraceChain := generatePost("channelId", "userId", occurrenceAttachmentWithTraceChain)
+	reactivatedPost := generatePost("channelId", "userId", reactivatedAttachment)
+	reopenedPost := generatePost("channelId", "userId", reopenedAttachment)
+	resolvedPost := generatePost("channelId", "userId", resolvedAttachment)
 
 	testPost := &model.Post{
 		ChannelId: "channelId",
@@ -177,7 +245,7 @@ func TestServeHttp(t *testing.T) {
 	for name, test := range map[string]struct {
 		SetupAPI         func(api *plugintest.API) *plugintest.API
 		Method           string
-		Url              string
+		URL              string
 		Body             []byte
 		Configuration    *configuration
 		ExpectedStatus   int
@@ -186,7 +254,7 @@ func TestServeHttp(t *testing.T) {
 		"error - 404 not found for non `/notify` path non-notify": {
 			SetupAPI:         func(api *plugintest.API) *plugintest.API { return api },
 			Method:           "GET",
-			Url:              "/",
+			URL:              "/",
 			Body:             emptyBody,
 			Configuration:    &configuration{},
 			ExpectedStatus:   http.StatusNotFound,
@@ -195,7 +263,7 @@ func TestServeHttp(t *testing.T) {
 		"error - 405 method not allowed for non-POST": {
 			SetupAPI:         func(api *plugintest.API) *plugintest.API { return api },
 			Method:           "GET",
-			Url:              "/notify",
+			URL:              "/notify",
 			Body:             emptyBody,
 			Configuration:    &configuration{},
 			ExpectedStatus:   http.StatusMethodNotAllowed,
@@ -207,7 +275,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method:           "POST",
-			Url:              "/notify",
+			URL:              "/notify",
 			Body:             emptyBody,
 			Configuration:    &configuration{Secret: "abc123"},
 			ExpectedStatus:   http.StatusUnauthorized,
@@ -219,7 +287,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method:           "POST",
-			Url:              "/notify?auth=abc123",
+			URL:              "/notify?auth=abc123",
 			Body:             emptyBody,
 			Configuration:    &configuration{Secret: "abc123"},
 			ExpectedStatus:   http.StatusBadRequest,
@@ -231,7 +299,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   emptyBody,
 			Configuration: &configuration{
 				Secret: "abc123",
@@ -247,7 +315,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123&team=nonexistentQueryTeam",
+			URL:    "/notify?auth=abc123&team=nonexistentQueryTeam",
 			Body:   emptyBody,
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -263,7 +331,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123&channel=nonexistentQueryChannel",
+			URL:    "/notify?auth=abc123&channel=nonexistentQueryChannel",
 			Body:   emptyBody,
 			Configuration: &configuration{
 				Secret: "abc123",
@@ -278,7 +346,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   nil, // can't decode nil
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -296,7 +364,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -314,7 +382,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "item_velocity.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -332,7 +400,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "test.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -350,7 +418,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "deploy.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -368,7 +436,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -387,7 +455,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -406,8 +474,26 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "deploy.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - deploy with no username": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", deployPostWithNoUsername).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			URL:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "deploy_no_username.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",
@@ -420,11 +506,11 @@ func TestServeHttp(t *testing.T) {
 		"ok - exp_repeat_item with trace_chain": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)
-				api.On("CreatePost", expRepeatTraceChainPost).Return(nil, nil)
+				api.On("CreatePost", expRepeatPostWithTraceChain).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "exp_repeat_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -442,7 +528,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "item_velocity.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -460,7 +546,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "item_velocity.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -480,7 +566,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123&team=existingTeam&channel=existingChannel",
+			URL:    "/notify?auth=abc123&team=existingTeam&channel=existingChannel",
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -498,8 +584,26 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "new_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - new_item from java sdk with decimal customer timestamp": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", newItemPostFromJava).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			URL:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "new_item_java.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",
@@ -512,11 +616,11 @@ func TestServeHttp(t *testing.T) {
 		"ok - new_item with log message body": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)
-				api.On("CreatePost", newItemLogMessagePost).Return(nil, nil)
+				api.On("CreatePost", newItemPostWithLogMessage).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "new_item_log_message.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -527,15 +631,87 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusOK,
 			ExpectedResponse: "",
 		},
-		"ok - occurrence json": {
+		"ok - occurrence": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)
 				api.On("CreatePost", occurrencePost).Return(nil, nil)
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "occurrence.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - occurrence with trace_chain": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", occurrencePostWithTraceChain).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			URL:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "occurrence_trace_chain.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - reactivated_item": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", reactivatedPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			URL:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "reactivated_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - reopened_item": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", reopenedPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			URL:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "reopened_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				userId:    "userId",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - resolved_item": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", resolvedPost).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			URL:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "resolved_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				userId:    "userId",
@@ -552,7 +728,7 @@ func TestServeHttp(t *testing.T) {
 				return api
 			},
 			Method: "POST",
-			Url:    "/notify?auth=abc123",
+			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "test.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
@@ -571,7 +747,7 @@ func TestServeHttp(t *testing.T) {
 			p.SetAPI(api)
 			p.setConfiguration(test.Configuration)
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(test.Method, test.Url, bytes.NewReader(test.Body))
+			r := httptest.NewRequest(test.Method, test.URL, bytes.NewReader(test.Body))
 
 			p.ServeHTTP(nil, w, r)
 

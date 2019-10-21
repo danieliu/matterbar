@@ -38,7 +38,7 @@ https://mattermost.example.com/plugins/matterbar/notify?auth=YT5QclfXXrLyMDl-zw2
 ## Upgrading from < v1.0.0
 
 Requirements:
-* Mattermost Server `>= v5.10.0`
+* Mattermost Server `>= v5.12.0`
 * Convert previously configured `username` into a `bot`. This can be done by running the CLI `mattermost user convert <username> --bot`. More info on bots are available [here](https://mattermost.com/pl/default-bot-accounts).
 
 ### /rollbar command

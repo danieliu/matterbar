@@ -1,6 +1,8 @@
 package main
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"sync"
 
 	"github.com/mattermost/mattermost-server/model"
@@ -39,6 +41,20 @@ func (p *RollbarPlugin) OnActivate() error {
 		return errors.Wrap(err, "failed to ensure bot account")
 	}
 	p.botUserID = botUserID
+
+	bundlePath, err := p.API.GetBundlePath()
+	if err != nil {
+		return errors.Wrap(err, "couldn't get bundle path")
+	}
+
+	profileImage, err := ioutil.ReadFile(filepath.Join(bundlePath, "assets", "profile.png"))
+	if err != nil {
+		return errors.Wrap(err, "couldn't read profile image")
+	}
+
+	if appErr := p.API.SetProfileImage(botUserID, profileImage); appErr != nil {
+		return errors.Wrap(appErr, "couldn't set profile image")
+	}
 
 	return nil
 }

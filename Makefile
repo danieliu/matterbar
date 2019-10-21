@@ -10,6 +10,7 @@ bundle:
 	rm -rf dist/
 	mkdir -p dist/matterbar/server/
 	cp plugin.json dist/matterbar/
+	cp -r assets dist/matterbar/
 	cp -r build/* dist/matterbar/server/
 	cd dist && tar -cvzf matterbar.tar.gz matterbar/
 

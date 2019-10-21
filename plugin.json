@@ -1,6 +1,7 @@
 {
     "description": "A Mattermost plugin integration with Rollbar webhook events",
     "id": "matterbar",
+    "min_server_version": "5.12.0",
     "name": "Matterbar",
     "server": {
         "executable": "",
@@ -25,13 +26,6 @@
                 "display_name": "Default Channel",
                 "help_text": "The default channel where Rollbar webhooks will be posted. If not configured, incoming requests must include a `channel` query parameter. To use this setting, a default team must also be configured first.",
                 "key": "DefaultChannel",
-                "placeholder": "e.g. Rollbar",
-                "type": "text"
-            },
-            {
-                "display_name": "Username",
-                "help_text": "(Required) The user that this plugin will post as.",
-                "key": "Username",
                 "placeholder": "e.g. Rollbar",
                 "type": "text"
             },

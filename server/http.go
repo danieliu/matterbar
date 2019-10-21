@@ -140,12 +140,10 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 		post := &model.Post{
 			ChannelId: channelId,
-			UserId:    configuration.userId,
+			UserId:    p.botUserID,
 			Type:      model.POST_SLACK_ATTACHMENT,
 			Props: map[string]interface{}{
-				"from_webhook":  "true",
-				"use_user_icon": "true",
-				"attachments":   []*model.SlackAttachment{attachment},
+				"attachments": []*model.SlackAttachment{attachment},
 			},
 		}
 
@@ -178,12 +176,10 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 		post := &model.Post{
 			ChannelId: channelId,
-			UserId:    configuration.userId,
+			UserId:    p.botUserID,
 			Type:      model.POST_SLACK_ATTACHMENT,
 			Props: map[string]interface{}{
-				"from_webhook":  "true",
-				"use_user_icon": "true",
-				"attachments":   []*model.SlackAttachment{attachment},
+				"attachments": []*model.SlackAttachment{attachment},
 			},
 		}
 
@@ -195,12 +191,8 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case "test":
 		post := &model.Post{
 			ChannelId: channelId,
-			UserId:    configuration.userId,
+			UserId:    p.botUserID,
 			Message:   rollbar.Data.Message,
-			Props: map[string]interface{}{
-				"from_webhook":  "true",
-				"use_user_icon": "true",
-			},
 		}
 		if _, err := p.API.CreatePost(post); err != nil {
 			p.API.LogError(fmt.Sprintf("Error creating a post: %s", err.Error()))
@@ -271,12 +263,10 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	post := &model.Post{
 		ChannelId: channelId,
-		UserId:    configuration.userId,
+		UserId:    p.botUserID,
 		Type:      model.POST_SLACK_ATTACHMENT,
 		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   []*model.SlackAttachment{attachment},
+			"attachments": []*model.SlackAttachment{attachment},
 		},
 	}
 

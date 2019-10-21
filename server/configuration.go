@@ -23,10 +23,6 @@ type configuration struct {
 	// `Rollbar`.
 	DefaultChannel string
 
-	// The user that this plugin posts as, created automatically if it doesn't
-	// exist. Defaults to `Rollbar`.
-	Username string
-
 	// The generated secret that will be used to authenticate incoming webhook
 	// requests coming from Rollbar.
 	Secret string
@@ -34,7 +30,6 @@ type configuration struct {
 	// Corresponding ids of the above
 	teamId    string
 	channelId string
-	userId    string
 }
 
 // Clone deep copies the configuration. Your implementation may only require a
@@ -43,11 +38,9 @@ func (c *configuration) Clone() *configuration {
 	return &configuration{
 		DefaultTeam:    c.DefaultTeam,
 		DefaultChannel: c.DefaultChannel,
-		Username:       c.Username,
 		Secret:         c.Secret,
 		teamId:         c.teamId,
 		channelId:      c.channelId,
-		userId:         c.userId,
 	}
 }
 
@@ -87,8 +80,8 @@ func (p *RollbarPlugin) setConfiguration(configuration *configuration) {
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 //
-// Ensures the default team is configured, and that the default channel and user
-// are created for use by the plugin.
+// Ensures the default team is configured, and that the default channel are created
+// for use by the plugin.
 func (p *RollbarPlugin) OnConfigurationChange() error {
 	var configuration = new(configuration)
 	var err error
@@ -99,11 +92,6 @@ func (p *RollbarPlugin) OnConfigurationChange() error {
 	}
 
 	// validate configuration settings
-	configuration.userId, err = p.ensureUserExists(configuration)
-	if err != nil {
-		return errors.Wrap(err, "failed to ensure user exists")
-	}
-
 	configuration.teamId, err = p.ensureDefaultTeamExists(configuration)
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure default team exists")
@@ -121,27 +109,6 @@ func (p *RollbarPlugin) OnConfigurationChange() error {
 	p.setConfiguration(configuration)
 
 	return nil
-}
-
-// Ensures the configured default user exists
-func (p *RollbarPlugin) ensureUserExists(configuration *configuration) (string, error) {
-	var err *model.AppError
-
-	// Check for the configured user. Ignore any error, since it's hard to
-	// distinguish runtime errors from a user simply not existing.
-	user, _ := p.API.GetUserByUsername(configuration.Username)
-
-	// Check that the configured user exists.
-	if user == nil {
-		// TODO: make sure the returned error is actually logged and somehow
-		// visible to whoever is changing this setting, then remove the explicit
-		// warn log call
-		p.API.LogWarn(fmt.Sprintf("Configuration invalid: no user with Username %s exists",
-			configuration.Username))
-		return "", err
-	}
-
-	return user.Id, nil
 }
 
 // Ensures the configured default team exists

@@ -13,11 +13,9 @@ func TestCloningConfiguration(t *testing.T) {
 		configuration := &configuration{
 			DefaultTeam:    "team",
 			DefaultChannel: "channel",
-			Username:       "username",
 			Secret:         "secret",
 			teamId:         "teamId",
 			channelId:      "channelId",
-			userId:         "userId",
 		}
 		cloned := configuration.Clone()
 		if &cloned == &configuration {
@@ -41,7 +39,7 @@ func TestGetSetConfiguration(t *testing.T) {
 
 	t.Run("changing configuration", func(t *testing.T) {
 		plugin := &RollbarPlugin{}
-		configuration1 := &configuration{userId: "123"}
+		configuration1 := &configuration{teamId: "123"}
 		plugin.setConfiguration(configuration1)
 		if configuration1 != plugin.getConfiguration() {
 			t.Errorf("Configurations not equal. %s != %s",
@@ -49,7 +47,7 @@ func TestGetSetConfiguration(t *testing.T) {
 				plugin.getConfiguration())
 		}
 
-		configuration2 := &configuration{userId: "456"}
+		configuration2 := &configuration{teamId: "456"}
 		plugin.setConfiguration(configuration2)
 		if configuration2 != plugin.getConfiguration() {
 			t.Errorf("Configurations not equal. %s != %s",
@@ -108,24 +106,20 @@ func TestOnConfigurationChange(t *testing.T) {
 					*dest.(*configuration) = *config
 					return nil
 				})
-				api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
 				api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
 				api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(&model.Channel{Id: "channelId"}, nil)
 				api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(nil)
 				return api
 			},
 			Configuration: &configuration{
-				Username:       "username",
 				DefaultTeam:    "default-team",
 				DefaultChannel: "default-channel",
 			},
 			ExpectedConfiguration: &configuration{
-				Username:       "username",
 				DefaultTeam:    "default-team",
 				DefaultChannel: "default-channel",
 				teamId:         "teamId",
 				channelId:      "channelId",
-				userId:         "userId",
 			},
 			ShouldError: false,
 		},
@@ -138,37 +132,20 @@ func TestOnConfigurationChange(t *testing.T) {
 			ExpectedConfiguration: &configuration{},
 			ShouldError:           true,
 		},
-		"ensureDefaultUserExists error": {
-			SetupAPI: func(api *plugintest.API, config *configuration) *plugintest.API {
-				api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
-					*dest.(*configuration) = *config
-					return nil
-				})
-				api.On("GetUserByUsername", "username").Return(nil, nil)
-				api.On("LogWarn", mock.Anything).Return(nil)
-				return api
-			},
-			Configuration:         &configuration{Username: "username"},
-			ExpectedConfiguration: &configuration{Username: "username"},
-			ShouldError:           true,
-		},
 		"ensureDefaultTeamExists error": {
 			SetupAPI: func(api *plugintest.API, config *configuration) *plugintest.API {
 				api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.configuration")).Return(func(dest interface{}) error {
 					*dest.(*configuration) = *config
 					return nil
 				})
-				api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
 				api.On("GetTeamByName", "default-team").Return(nil, nil)
 				api.On("LogWarn", mock.Anything).Return(nil)
 				return api
 			},
 			Configuration: &configuration{
-				Username:    "username",
 				DefaultTeam: "default-team",
 			},
 			ExpectedConfiguration: &configuration{
-				Username:    "username",
 				DefaultTeam: "default-team",
 			},
 			ShouldError: true,
@@ -179,19 +156,16 @@ func TestOnConfigurationChange(t *testing.T) {
 					*dest.(*configuration) = *config
 					return nil
 				})
-				api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
 				api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
 				api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(nil, nil)
 				api.On("LogWarn", mock.Anything).Return(nil)
 				return api
 			},
 			Configuration: &configuration{
-				Username:       "username",
 				DefaultTeam:    "default-team",
 				DefaultChannel: "default-channel",
 			},
 			ExpectedConfiguration: &configuration{
-				Username:       "username",
 				DefaultTeam:    "default-team",
 				DefaultChannel: "default-channel",
 			},
@@ -203,19 +177,16 @@ func TestOnConfigurationChange(t *testing.T) {
 					*dest.(*configuration) = *config
 					return nil
 				})
-				api.On("GetUserByUsername", "username").Return(&model.User{Id: "userId"}, nil)
 				api.On("GetTeamByName", "default-team").Return(&model.Team{Id: "teamId"}, nil)
 				api.On("GetChannelByNameForTeamName", "default-team", "default-channel", false).Return(&model.Channel{Id: "channelId"}, nil)
 				api.On("RegisterCommand", mock.AnythingOfType("*model.Command")).Return(&model.AppError{Message: "error"})
 				return api
 			},
 			Configuration: &configuration{
-				Username:       "username",
 				DefaultTeam:    "default-team",
 				DefaultChannel: "default-channel",
 			},
 			ExpectedConfiguration: &configuration{
-				Username:       "username",
 				DefaultTeam:    "default-team",
 				DefaultChannel: "default-channel",
 			},

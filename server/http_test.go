@@ -30,9 +30,7 @@ func generatePost(channel string, user string, attachments []*model.SlackAttachm
 		UserId:    user,
 		Type:      model.POST_SLACK_ATTACHMENT,
 		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-			"attachments":   attachments,
+			"attachments": attachments,
 		},
 	}
 }
@@ -66,6 +64,7 @@ func generateAttachmentFields(environment string, framework string, language str
 }
 
 func TestServeHttp(t *testing.T) {
+	botUserID := "botUserID"
 	emptyBody := []byte("{}")
 	itemURL := "https://rollbar.com/organization/project/items/%s/"
 	newItemUUID := "2e7cbf0a-a3af-402a-ab4f-95e07e5982f8"
@@ -216,30 +215,26 @@ func TestServeHttp(t *testing.T) {
 		},
 	}
 
-	deployPost := generatePost("channelId", "userId", deployAttachment)
-	deployPostWithNoUsername := generatePost("channelId", "userId", deployAttachmentWithNoUsername)
-	expRepeatPostWithTraceChain := generatePost("channelId", "userId", expRepeatAttachmentWithTraceChain)
-	itemVelocityPost := generatePost("channelId", "userId", itemVelocityAttachment)
-	itemVelocityPostWithNotify := generatePost("channelId", "userId", itemVelocityAttachmentWithNotify)
-	newItemPostWithChannelOverride := generatePost("existingChannelId", "userId", newItemAttachment)
-	newItemPost := generatePost("channelId", "userId", newItemAttachment)
-	newItemPostWithNotify := generatePost("channelId", "userId", newItemAttachmentWithNotify)
-	newItemPostFromJava := generatePost("channelId", "userId", newItemAttachmentFromJava)
-	newItemPostWithLogMessage := generatePost("channelId", "userId", newItemAttachmentWithLogMessage)
-	occurrencePost := generatePost("channelId", "userId", occurrenceAttachment)
-	occurrencePostWithTraceChain := generatePost("channelId", "userId", occurrenceAttachmentWithTraceChain)
-	reactivatedPost := generatePost("channelId", "userId", reactivatedAttachment)
-	reopenedPost := generatePost("channelId", "userId", reopenedAttachment)
-	resolvedPost := generatePost("channelId", "userId", resolvedAttachment)
+	deployPost := generatePost("channelId", botUserID, deployAttachment)
+	deployPostWithNoUsername := generatePost("channelId", botUserID, deployAttachmentWithNoUsername)
+	expRepeatPostWithTraceChain := generatePost("channelId", botUserID, expRepeatAttachmentWithTraceChain)
+	itemVelocityPost := generatePost("channelId", botUserID, itemVelocityAttachment)
+	itemVelocityPostWithNotify := generatePost("channelId", botUserID, itemVelocityAttachmentWithNotify)
+	newItemPostWithChannelOverride := generatePost("existingChannelId", botUserID, newItemAttachment)
+	newItemPost := generatePost("channelId", botUserID, newItemAttachment)
+	newItemPostWithNotify := generatePost("channelId", botUserID, newItemAttachmentWithNotify)
+	newItemPostFromJava := generatePost("channelId", botUserID, newItemAttachmentFromJava)
+	newItemPostWithLogMessage := generatePost("channelId", botUserID, newItemAttachmentWithLogMessage)
+	occurrencePost := generatePost("channelId", botUserID, occurrenceAttachment)
+	occurrencePostWithTraceChain := generatePost("channelId", botUserID, occurrenceAttachmentWithTraceChain)
+	reactivatedPost := generatePost("channelId", botUserID, reactivatedAttachment)
+	reopenedPost := generatePost("channelId", botUserID, reopenedAttachment)
+	resolvedPost := generatePost("channelId", botUserID, resolvedAttachment)
 
 	testPost := &model.Post{
 		ChannelId: "channelId",
-		UserId:    "userId",
+		UserId:    botUserID,
 		Message:   "This is a test payload from Rollbar. If you got this, it works!",
-		Props: map[string]interface{}{
-			"from_webhook":  "true",
-			"use_user_icon": "true",
-		},
 	}
 
 	for name, test := range map[string]struct {
@@ -440,7 +435,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -459,7 +453,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -478,7 +471,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "deploy.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -496,7 +488,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "deploy_no_username.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -514,7 +505,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "exp_repeat_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -532,7 +522,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "item_velocity.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -550,7 +539,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "item_velocity.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -570,7 +558,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -588,7 +575,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "new_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -606,7 +592,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "new_item_java.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -624,7 +609,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "new_item_log_message.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -642,7 +626,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "occurrence.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -660,7 +643,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "occurrence_trace_chain.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -678,7 +660,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "reactivated_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -696,7 +677,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "reopened_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -714,7 +694,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "resolved_item.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -732,7 +711,6 @@ func TestServeHttp(t *testing.T) {
 			Body:   loadJsonFile(t, "test.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
-				userId:    "userId",
 				teamId:    "teamId",
 				channelId: "channelId",
 			},
@@ -744,6 +722,7 @@ func TestServeHttp(t *testing.T) {
 			api := test.SetupAPI(&plugintest.API{})
 			defer api.AssertExpectations(t)
 			p := &RollbarPlugin{}
+			p.botUserID = botUserID
 			p.SetAPI(api)
 			p.setConfiguration(test.Configuration)
 			w := httptest.NewRecorder()

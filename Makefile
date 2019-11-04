@@ -6,6 +6,9 @@ build:
 	cd server && env GOOS=darwin GOARCH=amd64 go build -o ../build/plugin-darwin-amd64;
 	cd server && env GOOS=windows GOARCH=amd64 go build -o ../build/plugin-windows-amd64.exe;
 
+build-audit:
+	cd scripts && go build -o audit
+
 bundle:
 	rm -rf dist/
 	mkdir -p dist/matterbar/server/
@@ -32,7 +35,7 @@ deps-update:
 	dep ensure -update
 
 fmt:
-	gofmt -w server
+	gofmt -w server scripts
 
 test:
 	cd server && go test -v -race -coverprofile coverage.txt

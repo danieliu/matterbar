@@ -108,6 +108,10 @@ func TestEventText(t *testing.T) {
 			TestFile:     "item_velocity.json",
 			ExpectedText: "",
 		},
+		"ok - reactivated item ios crash report": {
+			TestFile:     "reactivated_item_ios_crash_report.json",
+			ExpectedText: "iOS crash report",
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			var rollbar Rollbar

@@ -33,6 +33,9 @@ type Trace struct {
 }
 
 type OccurrenceBody struct {
+	CrashReport struct {
+		Raw string `json:"raw"`
+	} `json:"crash_report"`
 	Message struct {
 		Body string `json:"body"`
 	} `json:"message"`
@@ -199,8 +202,10 @@ func (rollbar *Rollbar) eventText() string {
 	} else if occurrenceData.Body.Message.Body != "" {
 		// Option 3: message with no stack trace
 		eventMessage = occurrenceData.Body.Message.Body
+	} else if occurrenceData.Body.CrashReport.Raw != "" {
+		// Option 4: crash_report; iOS crash report
+		eventMessage = "iOS crash report"
 	}
-	// TODO: Option 4: crash_report; iOS crash report
 
 	return eventMessage
 }

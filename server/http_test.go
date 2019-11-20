@@ -194,6 +194,16 @@ func TestServeHttp(t *testing.T) {
 			Text:      "```\nTypeError: Assignment to constant variable.\n```",
 		},
 	}
+	reactivatedAttachmentCrashReport := []*model.SlackAttachment{
+		&model.SlackAttachment{
+			Color:     "#ffff00",
+			Fallback:  "[live] Reactivated Critical - iOS crash report",
+			Fields:    generateAttachmentFields("live", "ios", "objective-c", "C51CDD0D-7E3E-4C14-9D49-643C87AF04E6"),
+			Title:     "Reactivated Critical",
+			TitleLink: fmt.Sprintf(itemLink, "C51CDD0D-7E3E-4C14-9D49-643C87AF04E6"),
+			Text:      "```\niOS crash report\n```",
+		},
+	}
 	reopenedAttachment := []*model.SlackAttachment{
 		&model.SlackAttachment{
 			Color:     "#add8e6",
@@ -228,6 +238,7 @@ func TestServeHttp(t *testing.T) {
 	occurrencePost := generatePost("channelId", botUserID, occurrenceAttachment)
 	occurrencePostWithTraceChain := generatePost("channelId", botUserID, occurrenceAttachmentWithTraceChain)
 	reactivatedPost := generatePost("channelId", botUserID, reactivatedAttachment)
+	reactivatedPostCrashReport := generatePost("channelId", botUserID, reactivatedAttachmentCrashReport)
 	reopenedPost := generatePost("channelId", botUserID, reopenedAttachment)
 	resolvedPost := generatePost("channelId", botUserID, resolvedAttachment)
 
@@ -658,6 +669,23 @@ func TestServeHttp(t *testing.T) {
 			Method: "POST",
 			URL:    "/notify?auth=abc123",
 			Body:   loadJsonFile(t, "reactivated_item.json"),
+			Configuration: &configuration{
+				Secret:    "abc123",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusOK,
+			ExpectedResponse: "",
+		},
+		"ok - reactivated_item ios crash report": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("KVGet", "channelId").Return([]byte(""), nil)
+				api.On("CreatePost", reactivatedPostCrashReport).Return(nil, nil)
+				return api
+			},
+			Method: "POST",
+			URL:    "/notify?auth=abc123",
+			Body:   loadJsonFile(t, "reactivated_item_ios_crash_report.json"),
 			Configuration: &configuration{
 				Secret:    "abc123",
 				teamId:    "teamId",

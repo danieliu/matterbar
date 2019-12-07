@@ -11,6 +11,18 @@ const (
 	timeLayout = "2006-01-02 15:04:05 MST-0700"
 )
 
+var supportedEvents = map[string]bool{
+	"deploy":           true,
+	"exp_repeat_item":  true,
+	"item_velocity":    true,
+	"new_item":         true,
+	"occurrence":       true,
+	"reactivated_item": true,
+	"reopened_item":    true,
+	"resolved_item":    true,
+	"test":             true,
+}
+
 type Trace struct {
 	Exception struct {
 		Class   string `json:"class"`
@@ -44,7 +56,8 @@ type OccurrenceBody struct {
 }
 
 type OccurrenceMetadata struct {
-	AccessToken       string      `json:"access_token"`
+	// to avoid accidentally exposing API tokens
+	// AccessToken       string      `json:"access_token"`
 	APIServerHostname string      `json:"api_server_hostname"`
 	CustomerTimestamp json.Number `json:"customer_timestamp"`
 	Debug             struct {
@@ -132,6 +145,20 @@ type Rollbar struct {
 		} `json:"trigger"`
 		URL string `json:"url"`
 	} `json:"data"`
+}
+
+// TODO: additional validation on occurrence data
+func (rollbar *Rollbar) isValid() string {
+	if rollbar.EventName == "" {
+		return "Missing rollbar.event_name"
+	}
+
+	_, supported := supportedEvents[rollbar.EventName]
+	if !supported {
+		return "Unsupported rollbar.event_name"
+	}
+
+	return ""
 }
 
 func (rollbar *Rollbar) eventNameToTitle() string {

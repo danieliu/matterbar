@@ -30,6 +30,71 @@ func TestRollbarCustomerTimestamp(t *testing.T) {
 	}
 }
 
+func TestIsValid(t *testing.T) {
+	for name, test := range map[string]struct {
+		TestFile       string
+		ExpectedReturn string
+	}{
+		"valid - deploy": {
+			TestFile:       "deploy.json",
+			ExpectedReturn: "",
+		},
+		"valid - exp repeat item": {
+			TestFile:       "exp_repeat_item.json",
+			ExpectedReturn: "",
+		},
+		"valid - high velocity item": {
+			TestFile:       "item_velocity.json",
+			ExpectedReturn: "",
+		},
+		"valid - new item": {
+			TestFile:       "new_item.json",
+			ExpectedReturn: "",
+		},
+		"valid - every occurrence": {
+			TestFile:       "occurrence.json",
+			ExpectedReturn: "",
+		},
+		"valid - reactivated item": {
+			TestFile:       "reactivated_item.json",
+			ExpectedReturn: "",
+		},
+		"valid - reopened item": {
+			TestFile:       "reopened_item.json",
+			ExpectedReturn: "",
+		},
+		"valid - resolved item": {
+			TestFile:       "resolved_item.json",
+			ExpectedReturn: "",
+		},
+		"valid - test": {
+			TestFile:       "test.json",
+			ExpectedReturn: "",
+		},
+		"invalid - empty data": {
+			TestFile:       "invalid/empty.json",
+			ExpectedReturn: "Missing rollbar.event_name",
+		},
+		"invalid - unsupported event name": {
+			TestFile:       "invalid/unsupported_event_name.json",
+			ExpectedReturn: "Unsupported rollbar.event_name",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var rollbar Rollbar
+			data := loadJsonFile(t, test.TestFile)
+			err := json.Unmarshal([]byte(data), &rollbar)
+			if err != nil {
+				t.Fatal(err)
+			}
+			actualReturn := rollbar.isValid()
+			if actualReturn != test.ExpectedReturn {
+				t.Errorf("Expected: %s\nActual: %s", test.ExpectedReturn, actualReturn)
+			}
+		})
+	}
+}
+
 func TestEventNameToTitle(t *testing.T) {
 	for name, test := range map[string]struct {
 		TestFile      string

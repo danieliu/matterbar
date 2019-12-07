@@ -108,6 +108,13 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if invalidMsg := rollbar.isValid(); invalidMsg != "" {
+		rollbarJSON, _ := json.Marshal(rollbar)
+		p.API.LogWarn(fmt.Sprintf("Invalid rollbar webhook received: %s: %s", invalidMsg, rollbarJSON))
+		http.Error(w, invalidMsg, http.StatusBadRequest)
+		return
+	}
+
 	usersToNotify, err := p.API.KVGet(channelId)
 	if err != nil {
 		p.API.LogWarn(fmt.Sprintf("Error fetching users to notify in channel %s", channelId))

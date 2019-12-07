@@ -362,6 +362,22 @@ func TestServeHttp(t *testing.T) {
 			ExpectedStatus:   http.StatusBadRequest,
 			ExpectedResponse: "EOF\n",
 		},
+		"error - 400 bad request when webhook request body json fails additional validation": {
+			SetupAPI: func(api *plugintest.API) *plugintest.API {
+				api.On("LogWarn", mock.Anything).Return(nil)
+				return api
+			},
+			Method: "POST",
+			URL:    "/notify?auth=abc123",
+			Body:   emptyBody,
+			Configuration: &configuration{
+				Secret:    "abc123",
+				teamId:    "teamId",
+				channelId: "channelId",
+			},
+			ExpectedStatus:   http.StatusBadRequest,
+			ExpectedResponse: "Missing rollbar.event_name\n",
+		},
 		"error - 500 internal server error when failed to create post for whatever reason (event: new_item)": {
 			SetupAPI: func(api *plugintest.API) *plugintest.API {
 				api.On("KVGet", "channelId").Return([]byte(""), nil)

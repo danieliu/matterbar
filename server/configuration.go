@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/mattermost/mattermost-server/model"
+
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/pkg/errors"
 )
 
@@ -28,8 +29,9 @@ type configuration struct {
 	Secret string
 
 	// Corresponding ids of the above
-	teamId    string
-	channelId string
+	teamId        string
+	channelId     string
+	RollbarApiKey string
 }
 
 // Clone deep copies the configuration. Your implementation may only require a
@@ -39,8 +41,7 @@ func (c *configuration) Clone() *configuration {
 		DefaultTeam:    c.DefaultTeam,
 		DefaultChannel: c.DefaultChannel,
 		Secret:         c.Secret,
-		teamId:         c.teamId,
-		channelId:      c.channelId,
+		RollbarApiKey:  c.RollbarApiKey,
 	}
 }
 

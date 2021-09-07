@@ -1,4 +1,12 @@
-build
 dist
 coverage.txt
 scripts/audit
+
+# Mac
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Jetbrains
+.idea/

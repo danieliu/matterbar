@@ -103,6 +103,19 @@ type Deploy struct {
 	UserID        *int    `json:"user_id"`
 }
 
+type ProjectData struct {
+	Err    int `json:"err"`
+	Result struct {
+		ID           int    `json:"id"`
+		AccountID    int    `json:"account_id"`
+		Status       string `json:"status"`
+		Name         string `json:"name"`
+		SettingsData struct {
+			Timezone string `json:"timezone"`
+		} `json:"settings_data"`
+	}
+}
+
 type Rollbar struct {
 	EventName string `json:"event_name"`
 	Data      struct {

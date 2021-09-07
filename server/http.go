@@ -4,15 +4,18 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strconv"
+	"time"
 
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 )
 
 const (
 	postFallbackMaxLength = 500
-	postTextMaxLength     = 6000
+	postTextMaxLength     = 500
 )
 
 var EventToColor = map[string]string{
@@ -115,6 +118,42 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//get project title and timezone
+	projectTitle := ""
+	timezone := ""
+
+	if configuration.RollbarApiKey != "" {
+		var projectData ProjectData
+		rollbarApiKey := configuration.RollbarApiKey
+		projectID := rollbar.Data.Item.ProjectID
+		//p.API.LogError("rollbarData=", rollbar)
+		rollbarURL := "https://api.rollbar.com/api/1/project/" + strconv.Itoa(projectID)
+		client := &http.Client{}
+		req, err := http.NewRequest("GET", rollbarURL, nil)
+		if err != nil {
+			p.API.LogError("Error creating http request", "err:", err.Error())
+		} else {
+			req.Header.Add("X-Rollbar-Access-Token", rollbarApiKey)
+			//fmt.Println(req)
+			response, err := client.Do(req)
+			if err != nil {
+				p.API.LogError("Error sending request to rollbar", "err:", err.Error())
+			} else {
+				responseData, err := ioutil.ReadAll(response.Body)
+				if err != nil {
+					p.API.LogError("Error reading response body", "err:", err.Error())
+				} else {
+					if err := json.Unmarshal(responseData, &projectData); err != nil {
+						p.API.LogError("Error marshaling responseData", "err:", err.Error())
+					} else {
+						projectTitle = projectData.Result.Name
+						timezone = projectData.Result.SettingsData.Timezone
+					}
+				}
+			}
+		}
+	}
+
 	usersToNotify, err := p.API.KVGet(channelId)
 	if err != nil {
 		p.API.LogWarn(fmt.Sprintf("Error fetching users to notify in channel %s", channelId))
@@ -131,14 +170,53 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// non-standard webhook events, i.e. different available data
 	switch rollbar.EventName {
 	case "item_velocity":
-		// handle specifically because rollbar doesn't include occurrence data
-		text := "No details available. High occurrence rate rollbar events are minimally supported."
+
+		environment := rollbar.Data.Item.Environment
+
+		lastOccurrenceTime := ""
+
+		if timezone != "" {
+			lastOccurrenceTimestamp := rollbar.Data.Item.LastOccurrenceTimestamp
+			if zone, err := time.LoadLocation(timezone); err != nil {
+				p.API.LogError("Error parsing timezone", err.Error, "timezone:", timezone)
+			} else {
+				lastOccurrenceTime = time.Unix(int64(lastOccurrenceTimestamp), 0).In(zone).Format(time.ANSIC)
+			}
+
+		}
+
+		fields := []*model.SlackAttachmentField{
+			&model.SlackAttachmentField{
+				Short: true,
+				Title: "Project",
+				Value: projectTitle,
+			},
+			&model.SlackAttachmentField{
+				Short: true,
+				Title: "Last Occurrence",
+				Value: lastOccurrenceTime,
+			},
+			&model.SlackAttachmentField{
+				Short: true,
+				Title: "Environment",
+				Value: environment,
+			},
+			&model.SlackAttachmentField{
+				Short: true,
+				Title: "Links",
+				Value: fmt.Sprintf("[Occurrences](%s)", rollbar.Data.URL),
+			},
+		}
+
+		title = "#" + strconv.Itoa(rollbar.Data.Item.Counter) + " " + title + ":"
+
+		text := rollbar.Data.Item.Title
 		attachment := &model.SlackAttachment{
 			Color:     EventToColor[rollbar.EventName],
 			Fallback:  title,
-			Title:     title,
+			Title:     fmt.Sprintf("%s    %s", title, TruncateString(text, postTextMaxLength)),
+			Fields:    fields,
 			TitleLink: rollbar.Data.URL,
-			Text:      fmt.Sprintf("```\n%s\n```", text),
 		}
 
 		if pretext != "None" {
@@ -215,7 +293,6 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		lastOccurrence = rollbar.Data.Occurrence
 	}
 	environment := rollbar.Data.Item.Environment
-	framework := lastOccurrence.Framework
 	language := lastOccurrence.Language
 	itemLink := fmt.Sprintf(
 		"https://rollbar.com/item/uuid/?uuid=%s",
@@ -235,13 +312,13 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	fields := []*model.SlackAttachmentField{
 		&model.SlackAttachmentField{
 			Short: true,
-			Title: "Environment",
-			Value: environment,
+			Title: "Project",
+			Value: projectTitle,
 		},
 		&model.SlackAttachmentField{
 			Short: true,
-			Title: "Framework",
-			Value: framework,
+			Title: "Environment",
+			Value: environment,
 		},
 		&model.SlackAttachmentField{
 			Short: true,
@@ -255,13 +332,15 @@ func (p *RollbarPlugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	//edit title
+	title = "#" + strconv.Itoa(rollbar.Data.Item.Counter) + " " + title + ":"
+
 	attachment := &model.SlackAttachment{
 		Color:     EventToColor[rollbar.EventName],
 		Fallback:  fallback,
 		Fields:    fields,
-		Title:     title,
+		Title:     fmt.Sprintf("%s  %s", title, TruncateString(eventText, postTextMaxLength)),
 		TitleLink: itemLink,
-		Text:      fmt.Sprintf("```\n%s\n```", TruncateString(eventText, postTextMaxLength)),
 	}
 
 	if pretext != "None" {
